@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<title>MX Paid Media — Tablero Marketing</title>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --card-hover: #263348;
+    --border: #334155; --border-strong: #4b5563; --row-border: #283548;
+    --text: #e2e8f0; --text-title: #f8fafc;
+    --text-muted: #cbd5e1; --text-muted-2: #94a3b8; --text-muted-3: #64748b;
+    --accent: #818cf8; --accent-on: #f8fafc;
+    --accent-web: #38bdf8;
+    --accent-lf: #f472b6;
+    --accent-ei: #34d399;
+    --accent-google: #fbbf24;
+    --accent-fb: #60a5fa;
+    --accent-bing: #a78bfa;
+    --row-total: #1a2744;
+  }
+  body.light {
+    --bg: #f5f7fa; --card: #ffffff; --card-hover: #f1f5f9;
+    --border: #e2e8f0; --border-strong: #cbd5e1; --row-border: #f1f5f9;
+    --text: #334155; --text-title: #0f172a;
+    --text-muted: #475569; --text-muted-2: #64748b; --text-muted-3: #94a3b8;
+    --accent: #6366f1;
+    --accent-web: #0284c7;
+    --accent-lf: #db2777;
+    --accent-ei: #059669;
+    --accent-google: #d97706;
+    --accent-fb: #2563eb;
+    --accent-bing: #7c3aed;
+    --row-total: #eef2ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: background 0.2s, color 0.2s; }
+  .back-link { display: inline-block; color: var(--text-muted-2); text-decoration: none; font-size: 13px; margin-bottom: 16px; padding: 4px 10px; border-radius: 6px; transition: background 0.15s, color 0.15s; }
+  .back-link:hover { background: var(--card); color: var(--accent); }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 22px; font-weight: 600; color: var(--text-title); }
+  .header .refresh-info { font-size: 13px; color: var(--text-muted-3); display: flex; align-items: center; gap: 10px; }
+  .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; padding: 4px 10px; font-size: 14px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .theme-btn:hover { background: var(--card-hover); color: var(--accent); }
+  .subtitle { font-size: 13px; color: var(--text-muted-3); margin-bottom: 20px; }
+
+  .controls { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .control-group { display: flex; gap: 8px; align-items: center; }
+  .control-label { font-size: 11px; color: var(--text-muted-2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .pill-group { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .pill { padding: 7px 14px; font-size: 13px; color: var(--text-muted-2); cursor: pointer; border: none; background: transparent; transition: background 0.15s, color 0.15s; }
+  .pill:hover { background: var(--card-hover); color: var(--text); }
+  .pill.active { background: var(--accent); color: var(--accent-on); font-weight: 600; }
+  .pill + .pill { border-left: 1px solid var(--border); }
+  .pill[disabled] { opacity: 0.4; cursor: not-allowed; }
+  select.cmp-select { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 8px; font-size: 13px; min-width: 220px; max-width: 360px; }
+  select.cmp-select:focus { outline: none; border-color: var(--accent); }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .kpi { background: var(--card); border-radius: 10px; padding: 16px; border: 1px solid var(--border); }
+  .kpi .label { font-size: 11px; color: var(--text-muted-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 600; }
+  .kpi .value { font-size: 22px; font-weight: 700; color: var(--text-title); }
+  .kpi .sub { font-size: 11px; color: var(--text-muted-3); margin-top: 4px; }
+
+  .section-title { font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px; display: flex; align-items: center; gap: 12px; }
+  .section-title .hint { font-size: 11px; color: var(--text-muted-3); text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+  .tbl-card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; }
+  .tbl-card table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+  .tbl-card thead th { background: var(--border); color: var(--text-muted-2); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; padding: 10px 10px; text-align: right; white-space: nowrap; position: sticky; top: 0; }
+  .tbl-card thead th:first-child { text-align: left; padding-left: 18px; }
+  .tbl-card thead th.sep { border-left: 2px solid var(--border-strong); }
+  .tbl-card tbody td { padding: 9px 10px; text-align: right; border-top: 1px solid var(--row-border); white-space: nowrap; }
+  .tbl-card tbody td:first-child { text-align: left; font-weight: 500; color: var(--text-muted); padding-left: 18px; }
+  .tbl-card tbody td.sep { border-left: 2px solid var(--border-strong); }
+  .tbl-card tbody td.zero { color: var(--text-muted-3); }
+  .tbl-card tbody td.na { color: var(--text-muted-3); font-weight: 400; }
+  .tbl-card tbody tr.total-row td { font-weight: 700; background: var(--row-total); color: var(--text-title); border-top: 2px solid var(--border-strong); }
+  .tbl-card tbody tr:hover td { background: var(--card-hover); }
+  .tbl-card tbody tr.total-row:hover td { background: var(--row-total); }
+
+  .src-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; color: white; }
+  .src-badge.web { background: var(--accent-web); }
+  .src-badge.lf { background: var(--accent-lf); }
+  .src-badge.ei { background: var(--accent-ei); }
+  .src-badge.google { background: var(--accent-google); color: #1f2937; }
+  .src-badge.fb { background: var(--accent-fb); }
+  .src-badge.bing { background: var(--accent-bing); }
+
+  @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .kpis { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a href="../" class="back-link">← Volver (Tableros Marketing Sellers)</a>
+<div class="header">
+  <h1>MX Paid Media — Funnel + Inversión</h1>
+  <div class="refresh-info">
+    <span id="lastUpdate"></span>
+    <button type="button" class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">🌙</button>
+  </div>
+</div>
+<div class="subtitle">
+  México · Cohorte por fecha de creación del lead, cruzado con inversión paid media (Google, Facebook, Bing) vía UTM dict <code>registro_unico_utm_mkt_mexico</code>. Día actual excluido. <strong>Spend</strong> es agregado paid (no se segrega por fuente) — el filtro <strong>LF</strong> excluye spend (LF es universo aparte).
+</div>
+
+<script>
+  (function(){
+    const saved = localStorage.getItem('tablero-theme');
+    if (saved !== 'dark') document.body.classList.add('light');
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
+  })();
+  function toggleTheme(){
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    localStorage.setItem('tablero-theme', isLight ? 'light' : 'dark');
+    document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+  }
+</script>
+
+<div class="controls">
+  <div class="control-group">
+    <span class="control-label">Periodo</span>
+    <div class="pill-group" id="rangePills">
+      <button class="pill" data-r="7">7 días</button>
+      <button class="pill" data-r="30">30 días</button>
+      <button class="pill active" data-r="90">90 días</button>
+      <button class="pill" data-r="ytd">YTD</button>
+      <button class="pill" data-r="all">Todo</button>
+    </div>
+  </div>
+  <div class="control-group">
+    <span class="control-label">Granularidad</span>
+    <div class="pill-group" id="granPills">
+      <button class="pill" data-g="D">Día</button>
+      <button class="pill" data-g="W">Semana</button>
+      <button class="pill active" data-g="M">Mes</button>
+      <button class="pill" data-g="Q">Trim.</button>
+      <button class="pill" data-g="Y">Año</button>
+    </div>
+  </div>
+</div>
+<div class="controls">
+  <div class="control-group">
+    <span class="control-label">Fuente</span>
+    <div class="pill-group" id="srcPills">
+      <button class="pill active" data-s="all">Todas</button>
+      <button class="pill" data-s="3"><span class="src-badge web">WEB</span></button>
+      <button class="pill" data-s="47"><span class="src-badge lf">LF</span></button>
+      <button class="pill" data-s="7"><span class="src-badge ei">Estudio Inm.</span></button>
+    </div>
+  </div>
+  <div class="control-group">
+    <span class="control-label">Plataforma</span>
+    <div class="pill-group" id="plPills">
+      <button class="pill active" data-p="all">Todas</button>
+      <button class="pill" data-p="Google">Google</button>
+      <button class="pill" data-p="Facebook">Facebook</button>
+      <button class="pill" data-p="Bing">Bing</button>
+    </div>
+  </div>
+  <div class="control-group">
+    <span class="control-label">Campaña</span>
+    <select id="cmpSelect" class="cmp-select">
+      <option value="all">Todas</option>
+    </select>
+  </div>
+</div>
+
+<div id="kpis" class="kpis"></div>
+
+<div class="section-title">Volumen por periodo <span class="hint">conteos crudos del funnel</span></div>
+<div class="tbl-card">
+  <table id="volTable">
+    <thead>
+      <tr>
+        <th>Periodo</th>
+        <th>Impressions</th>
+        <th>Clicks</th>
+        <th class="sep">Creados</th>
+        <th>Calificados</th>
+        <th>Asignados</th>
+        <th>Cita Agend.</th>
+        <th>Cierres</th>
+        <th class="sep">Asg/Cierre</th>
+        <th>% CTR</th>
+        <th>% Click→Lead</th>
+        <th>% Conv. Rate</th>
+        <th>% Tasa Asg.</th>
+        <th>% Cita Agend.</th>
+        <th>% Cierre</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section-title">Costos por periodo <span class="hint">inversión y costo por etapa</span></div>
+<div class="tbl-card">
+  <table id="costTable">
+    <thead>
+      <tr>
+        <th>Periodo</th>
+        <th>Inversión</th>
+        <th class="sep">CPM</th>
+        <th>CPC (clk)</th>
+        <th class="sep">CP Lead</th>
+        <th>CP Calificado</th>
+        <th>CP Asignado</th>
+        <th>CP Cita</th>
+        <th>CP Cierre</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section-title" id="breakdownTitle">Desglose por plataforma × campaña <span class="hint">spend + leads matched (Web/EI)</span></div>
+<div class="tbl-card">
+  <table id="bdTable">
+    <thead>
+      <tr>
+        <th>Plataforma / Campaña</th>
+        <th>Inversión</th>
+        <th>Impr.</th>
+        <th>Clicks</th>
+        <th>Creados</th>
+        <th>Calificados</th>
+        <th>Asignados</th>
+        <th>Cierres</th>
+        <th class="sep">% CTR</th>
+        <th>CPC</th>
+        <th>CP Lead</th>
+        <th>CP Calif.</th>
+        <th>CP Cierre</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+// ============================================================================
+// Contrato data.json — UNION de filas de spend + filas de leads.
+//
+//   Spend rows (fid=0):  inversión paid agregada (Google/Facebook/Bing).
+//                        cre/cal/asg/cit/cie siempre 0.
+//
+//   Lead rows (fid en 3, 7, 47): leads cohort por fecha_creacion.
+//                                imp/clk/spend siempre 0.
+//
+// {
+//   d:   "2026-04-29",   // fecha ISO
+//   fid: 0|3|7|47,       // 0=spend, 3=WEB, 7=Estudio Inmueble, 47=Lead Forms
+//   pl:  "Google",       // plataforma (Google/Facebook/Bing) | null si no aplica
+//   cmp: "campaign_x",   // nombre de campaña | null si no aplica
+//   imp, clk, spend,     // métricas paid (en spend rows)
+//   cre, cal, asg, cit, cie  // métricas funnel (en lead rows)
+// }
+//
+// Lógica filtro fuente:
+//   "Todas":  todas las filas
+//   Web (3) / EI (7): filas de esa fuente + filas spend (fid=0)
+//   LF (47): solo filas LF (sin spend — LF queda como universo aparte)
+// ============================================================================
+
+const SRC_LABEL = {3:'WEB', 7:'Estudio Inmueble', 47:'Lead Forms'};
+const SRC_CLASS = {3:'web', 7:'ei', 47:'lf'};
+const PL_CLASS  = {Google:'google', Facebook:'fb', Bing:'bing'};
+
+let RAW = [];
+let STATE = { range:'90', gran:'M', src:'all', pl:'all', cmp:'all' };
+
+const today = new Date();
+function isoDate(d){ return d.toISOString().slice(0,10); }
+function parseDate(s){ return new Date(s + 'T00:00:00Z'); }
+
+function n(x){ return typeof x === 'string' ? parseInt(x,10) || 0 : (x || 0); }
+function num(x){ return typeof x === 'string' ? parseFloat(x) || 0 : (x || 0); }
+function fmt(v){ return v.toLocaleString('es-MX'); }
+function fmtMXN(v){ return '$' + Math.round(v).toLocaleString('es-MX'); }
+function fmtMXN2(v){ return '$' + v.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtCP(spend, count){
+  if (!count) return '—';
+  const v = spend / count;
+  return v >= 100 ? fmtMXN(v) : fmtMXN2(v);
+}
+function fmtCPM(spend, imp){
+  if (!imp) return '—';
+  const v = spend * 1000 / imp;
+  return v >= 100 ? fmtMXN(v) : fmtMXN2(v);
+}
+function pct(num, den){
+  if (!den) return '—';
+  const p = 100 * num / den;
+  return p < 10 ? p.toFixed(2) + '%' : (p < 100 ? p.toFixed(1) + '%' : Math.round(p) + '%');
+}
+function ratio(num, den){
+  if (!den) return '—';
+  return (num / den).toFixed(1);
+}
+
+// ----------------------------------------------------------------------------
+// Filtrado y agregación
+// ----------------------------------------------------------------------------
+function rangeStart(){
+  const r = STATE.range;
+  if (r === 'all') return '1900-01-01';
+  if (r === 'ytd') return today.getFullYear() + '-01-01';
+  const days = parseInt(r, 10);
+  const d = new Date(today); d.setUTCDate(d.getUTCDate() - days);
+  return isoDate(d);
+}
+
+function filteredRows(){
+  const start = rangeStart();
+  return RAW.filter(r => {
+    if (r.d < start) return false;
+    if (STATE.src !== 'all'){
+      if (STATE.src === '47'){
+        // LF: solo leads de LF, excluye spend (fid=0).
+        if (r.fid !== 47) return false;
+      } else {
+        // Web (3) o EI (7): leads de esa fuente + spend (fid=0).
+        if (r.fid !== 0 && String(r.fid) !== STATE.src) return false;
+      }
+    }
+    if (STATE.pl !== 'all'){
+      // Filtro de plataforma aplica solo a filas con pl definida (paid + Web/EI matched).
+      if (r.pl !== STATE.pl) return false;
+    }
+    if (STATE.cmp !== 'all' && r.cmp !== STATE.cmp) return false;
+    return true;
+  });
+}
+
+function bucketKey(d, gran){
+  const dt = parseDate(d);
+  const y = dt.getUTCFullYear();
+  if (gran === 'D') return d;
+  if (gran === 'M') return `${y}-${String(dt.getUTCMonth()+1).padStart(2,'0')}`;
+  if (gran === 'Y') return String(y);
+  if (gran === 'Q') return `${y}-Q${Math.floor(dt.getUTCMonth()/3)+1}`;
+  if (gran === 'W'){
+    // ISO week
+    const tmp = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate()));
+    const dayNum = tmp.getUTCDay() || 7;
+    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+    return `${tmp.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+  }
+  return d;
+}
+
+function emptyAgg(){ return {imp:0, clk:0, spend:0, cre:0, cal:0, asg:0, cit:0, cie:0}; }
+function addInto(acc, r){
+  acc.imp   += n(r.imp);
+  acc.clk   += n(r.clk);
+  acc.spend += num(r.spend);
+  acc.cre   += n(r.cre);
+  acc.cal   += n(r.cal);
+  acc.asg   += n(r.asg);
+  acc.cit   += n(r.cit);
+  acc.cie   += n(r.cie);
+}
+
+function aggregate(rows, keyFn){
+  const m = new Map();
+  rows.forEach(r => {
+    const k = keyFn(r);
+    if (!m.has(k)) m.set(k, emptyAgg());
+    addInto(m.get(k), r);
+  });
+  return m;
+}
+
+// ----------------------------------------------------------------------------
+// KPIs
+// ----------------------------------------------------------------------------
+function renderKpis(rows){
+  const agg = emptyAgg();
+  rows.forEach(r => addInto(agg, r));
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="label">Inversión</div><div class="value">${fmtMXN(agg.spend)}</div><div class="sub">${rows.length} filas</div></div>
+    <div class="kpi"><div class="label">Impressions / Clicks</div><div class="value">${fmt(agg.imp)}</div><div class="sub">${fmt(agg.clk)} clicks · CTR ${pct(agg.clk, agg.imp)}</div></div>
+    <div class="kpi"><div class="label">Creados → Calificados</div><div class="value">${fmt(agg.cre)} → ${fmt(agg.cal)}</div><div class="sub">Conv. ${pct(agg.cal, agg.cre)} · CP Lead ${fmtCP(agg.spend, agg.cre)}</div></div>
+    <div class="kpi"><div class="label">Asignados / Cierres</div><div class="value">${fmt(agg.asg)} / ${fmt(agg.cie)}</div><div class="sub">Asg/Cierre ${ratio(agg.asg, agg.cie)} · CP Cierre ${fmtCP(agg.spend, agg.cie)}</div></div>
+
+    <div class="kpi"><div class="label">CPM</div><div class="value">${fmtCPM(agg.spend, agg.imp)}</div><div class="sub">costo por mil impresiones</div></div>
+    <div class="kpi"><div class="label">CPC</div><div class="value">${fmtCP(agg.spend, agg.clk)}</div><div class="sub">costo por click</div></div>
+    <div class="kpi"><div class="label">CP Calificado</div><div class="value">${fmtCP(agg.spend, agg.cal)}</div><div class="sub">${pct(agg.cal, agg.cre)} qual rate</div></div>
+    <div class="kpi"><div class="label">CP Asignado</div><div class="value">${fmtCP(agg.spend, agg.asg)}</div><div class="sub">${pct(agg.asg, agg.cal)} tasa asig.</div></div>
+  `;
+}
+
+// ----------------------------------------------------------------------------
+// Tablas por periodo
+// ----------------------------------------------------------------------------
+function renderPeriodTables(rows){
+  const buckets = aggregate(rows, r => bucketKey(r.d, STATE.gran));
+  const keys = [...buckets.keys()].sort().reverse();
+  const total = emptyAgg();
+  rows.forEach(r => addInto(total, r));
+
+  const volBody = document.querySelector('#volTable tbody');
+  const costBody = document.querySelector('#costTable tbody');
+  let volHtml = '', costHtml = '';
+
+  function volRow(label, a, isTotal){
+    const cls = isTotal ? ' class="total-row"' : '';
+    return `<tr${cls}>
+      <td>${label}</td>
+      <td>${a.imp ? fmt(a.imp) : '<span class="zero">0</span>'}</td>
+      <td>${a.clk ? fmt(a.clk) : '<span class="zero">0</span>'}</td>
+      <td class="sep">${a.cre ? fmt(a.cre) : '<span class="zero">0</span>'}</td>
+      <td>${a.cal ? fmt(a.cal) : '<span class="zero">0</span>'}</td>
+      <td>${a.asg ? fmt(a.asg) : '<span class="zero">0</span>'}</td>
+      <td>${a.cit ? fmt(a.cit) : '<span class="zero">0</span>'}</td>
+      <td>${a.cie ? fmt(a.cie) : '<span class="zero">0</span>'}</td>
+      <td class="sep">${ratio(a.asg, a.cie)}</td>
+      <td>${pct(a.clk, a.imp)}</td>
+      <td>${pct(a.cre, a.clk)}</td>
+      <td>${pct(a.cal, a.cre)}</td>
+      <td>${pct(a.asg, a.cal)}</td>
+      <td>${pct(a.cit, a.asg)}</td>
+      <td>${pct(a.cie, a.cit)}</td>
+    </tr>`;
+  }
+  function costRow(label, a, isTotal){
+    const cls = isTotal ? ' class="total-row"' : '';
+    return `<tr${cls}>
+      <td>${label}</td>
+      <td>${fmtMXN(a.spend)}</td>
+      <td class="sep">${fmtCPM(a.spend, a.imp)}</td>
+      <td>${fmtCP(a.spend, a.clk)}</td>
+      <td class="sep">${fmtCP(a.spend, a.cre)}</td>
+      <td>${fmtCP(a.spend, a.cal)}</td>
+      <td>${fmtCP(a.spend, a.asg)}</td>
+      <td>${fmtCP(a.spend, a.cit)}</td>
+      <td>${fmtCP(a.spend, a.cie)}</td>
+    </tr>`;
+  }
+  keys.forEach(k => {
+    const a = buckets.get(k);
+    volHtml += volRow(k, a, false);
+    costHtml += costRow(k, a, false);
+  });
+  volHtml += volRow('Total', total, true);
+  costHtml += costRow('Total', total, true);
+
+  volBody.innerHTML = keys.length ? volHtml : `<tr><td colspan="15" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos para los filtros seleccionados</td></tr>`;
+  costBody.innerHTML = keys.length ? costHtml : `<tr><td colspan="9" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos</td></tr>`;
+}
+
+// ----------------------------------------------------------------------------
+// Tabla breakdown por plataforma × campaña
+// ----------------------------------------------------------------------------
+function renderBreakdown(rows){
+  // Agrupa por (plataforma × campaña) — combina spend (fid=0) con leads (fid=3,7)
+  // del mismo bucket. Filtra rows sin plataforma (LF, orgánico no matched).
+  const eligible = rows.filter(r => r.pl);
+  const buckets = aggregate(eligible, r => `${r.pl}|${r.cmp || '(sin campaña)'}`);
+  const arr = [...buckets.entries()].map(([k, a]) => {
+    const [pl, cmp] = k.split('|');
+    return { pl, cmp, ...a };
+  }).sort((a,b) => b.spend - a.spend);
+
+  const tbody = document.querySelector('#bdTable tbody');
+  if (!arr.length){
+    tbody.innerHTML = `<tr><td colspan="13" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos paid (cambia el filtro de fuente a Web/EI/Todas, o quita filtros)</td></tr>`;
+    return;
+  }
+  const total = emptyAgg();
+  eligible.forEach(r => addInto(total, r));
+  let html = '';
+  arr.forEach(row => {
+    const plCls = PL_CLASS[row.pl] || '';
+    html += `<tr>
+      <td><span class="src-badge ${plCls}">${row.pl}</span> ${row.cmp}</td>
+      <td>${fmtMXN(row.spend)}</td>
+      <td>${fmt(row.imp)}</td>
+      <td>${fmt(row.clk)}</td>
+      <td>${fmt(row.cre)}</td>
+      <td>${fmt(row.cal)}</td>
+      <td>${fmt(row.asg)}</td>
+      <td>${fmt(row.cie)}</td>
+      <td class="sep">${pct(row.clk, row.imp)}</td>
+      <td>${fmtCP(row.spend, row.clk)}</td>
+      <td>${fmtCP(row.spend, row.cre)}</td>
+      <td>${fmtCP(row.spend, row.cal)}</td>
+      <td>${fmtCP(row.spend, row.cie)}</td>
+    </tr>`;
+  });
+  html += `<tr class="total-row">
+    <td>Total</td>
+    <td>${fmtMXN(total.spend)}</td>
+    <td>${fmt(total.imp)}</td>
+    <td>${fmt(total.clk)}</td>
+    <td>${fmt(total.cre)}</td>
+    <td>${fmt(total.cal)}</td>
+    <td>${fmt(total.asg)}</td>
+    <td>${fmt(total.cie)}</td>
+    <td class="sep">${pct(total.clk, total.imp)}</td>
+    <td>${fmtCP(total.spend, total.clk)}</td>
+    <td>${fmtCP(total.spend, total.cre)}</td>
+    <td>${fmtCP(total.spend, total.cal)}</td>
+    <td>${fmtCP(total.spend, total.cie)}</td>
+  </tr>`;
+  tbody.innerHTML = html;
+}
+
+// ----------------------------------------------------------------------------
+// Campaign dropdown — repobla cuando cambian fuente o plataforma
+// ----------------------------------------------------------------------------
+function refreshCampaignSelect(){
+  const sel = document.getElementById('cmpSelect');
+  const cur = STATE.cmp;
+  const start = rangeStart();
+  // Universo de campañas: spend rows (fid=0) y leads Web/EI con campaña matched.
+  // LF nunca tiene cmp, así que el dropdown queda vacío con src=LF.
+  const universe = RAW.filter(r => {
+    if (r.d < start) return false;
+    if (!r.cmp) return false;
+    if (STATE.src === '47') return false;
+    if (STATE.src !== 'all' && r.fid !== 0 && String(r.fid) !== STATE.src) return false;
+    if (STATE.pl !== 'all' && r.pl !== STATE.pl) return false;
+    return true;
+  });
+  const cmps = [...new Set(universe.map(r => r.cmp))].sort();
+  sel.innerHTML = '<option value="all">Todas</option>' + cmps.map(c => `<option value="${c}">${c}</option>`).join('');
+  if (cur === 'all' || cmps.includes(cur)) sel.value = cur;
+  else { sel.value = 'all'; STATE.cmp = 'all'; }
+  sel.disabled = STATE.src === '47';
+}
+
+// ----------------------------------------------------------------------------
+// Main render
+// ----------------------------------------------------------------------------
+function render(){
+  refreshCampaignSelect();
+  const rows = filteredRows();
+  renderKpis(rows);
+  renderPeriodTables(rows);
+  renderBreakdown(rows);
+}
+
+// ----------------------------------------------------------------------------
+// Wire up
+// ----------------------------------------------------------------------------
+function wirePills(groupId, key){
+  document.querySelectorAll(`#${groupId} .pill`).forEach(p => p.addEventListener('click', () => {
+    document.querySelectorAll(`#${groupId} .pill`).forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    STATE[key] = p.dataset[key === 'range' ? 'r' : key === 'gran' ? 'g' : key === 'src' ? 's' : 'p'];
+    render();
+  }));
+}
+wirePills('rangePills', 'range');
+wirePills('granPills',  'gran');
+wirePills('srcPills',   'src');
+wirePills('plPills',    'pl');
+document.getElementById('cmpSelect').addEventListener('change', e => {
+  STATE.cmp = e.target.value;
+  render();
+});
+
+// ----------------------------------------------------------------------------
+// Load
+// ----------------------------------------------------------------------------
+fetch('data.json').then(r => r.json()).then(data => {
+  RAW = data;
+  const dates = [...new Set(RAW.map(r => r.d))].sort();
+  if (dates.length){
+    document.getElementById('lastUpdate').textContent = `Datos hasta ${dates[dates.length-1]} · ${dates.length} días`;
+  }
+  render();
+}).catch(err => {
+  console.error(err);
+  document.querySelector('#volTable tbody').innerHTML = `<tr><td colspan="15" style="padding:24px;color:#f87171;text-align:center">No se encontró data.json</td></tr>`;
+});
+</script>
+</body>
+</html>
