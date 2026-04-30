@@ -102,7 +102,7 @@
   </div>
 </div>
 <div class="subtitle">
-  México · Cohorte por fecha de creación del lead, cruzado con inversión paid media (Google, Facebook, Bing) vía UTM dict <code>registro_unico_utm_mkt_mexico</code>. Día actual excluido. <strong>Spend</strong> es agregado paid (no se segrega por fuente) — el filtro <strong>LF</strong> excluye spend (LF es universo aparte).
+  México · Cohorte por fecha de creación del lead, cruzado con inversión paid media (Google, Facebook, Bing) vía UTM dict <code>registro_unico_utm_mkt_mexico</code>. Día actual excluido. Al filtrar por <strong>Web</strong> o <strong>Estudio Inmueble</strong> el <strong>spend se prorratea</strong> según la mezcla de leads matched de cada campaña. <strong>LF</strong> queda como universo aparte (sin spend).
 </div>
 
 <script>
@@ -316,24 +316,62 @@ function rangeStart(){
 
 function filteredRows(){
   const start = rangeStart();
-  return RAW.filter(r => {
-    if (r.d < start) return false;
-    if (STATE.src !== 'all'){
-      if (STATE.src === '47'){
-        // LF: solo leads de LF, excluye spend (fid=0).
-        if (r.fid !== 47) return false;
-      } else {
-        // Web (3) o EI (7): leads de esa fuente + spend (fid=0).
-        if (r.fid !== 0 && String(r.fid) !== STATE.src) return false;
+
+  // Pro-rata attribution: cuando filtras por Web o EI, el spend se reparte
+  // según la mezcla de leads matched que cada (día × plataforma × campaña)
+  // generó para esa fuente. Ej: campaña con 80% Web y 20% EI matched →
+  // 80% de su spend va a Web, 20% a EI. Si no hay leads matched para esa
+  // (d,pl,cmp), el spend se atribuye 100% a Web (default).
+  let shareMap = null;
+  if (STATE.src === '3' || STATE.src === '7') {
+    shareMap = {};
+    RAW.forEach(r => {
+      if (r.fid === 3 || r.fid === 7) {
+        const key = `${r.d}|${r.pl||''}|${r.cmp||''}`;
+        if (!shareMap[key]) shareMap[key] = { web: 0, ei: 0 };
+        if (r.fid === 3) shareMap[key].web += n(r.cre);
+        else              shareMap[key].ei  += n(r.cre);
       }
+    });
+  }
+
+  function spendShare(r) {
+    if (STATE.src === 'all') return 1.0;
+    if (STATE.src === '47')  return 0.0;
+    const key = `${r.d}|${r.pl||''}|${r.cmp||''}`;
+    const s = shareMap[key];
+    if (!s || (s.web + s.ei === 0)) {
+      return STATE.src === '3' ? 1.0 : 0.0;
     }
-    if (STATE.pl !== 'all'){
-      // Filtro de plataforma aplica solo a filas con pl definida (paid + Web/EI matched).
-      if (r.pl !== STATE.pl) return false;
+    const total = s.web + s.ei;
+    return STATE.src === '3' ? s.web/total : s.ei/total;
+  }
+
+  const out = [];
+  for (const r of RAW) {
+    if (r.d < start) continue;
+    if (STATE.pl !== 'all' && r.pl !== STATE.pl) continue;
+    if (STATE.cmp !== 'all' && r.cmp !== STATE.cmp) continue;
+
+    if (r.fid === 0) {
+      const share = spendShare(r);
+      if (share === 0) continue;
+      if (share === 1) {
+        out.push(r);
+      } else {
+        out.push({
+          ...r,
+          imp: Math.round(n(r.imp) * share),
+          clk: Math.round(n(r.clk) * share),
+          spend: num(r.spend) * share,
+        });
+      }
+    } else {
+      if (STATE.src !== 'all' && String(r.fid) !== STATE.src) continue;
+      out.push(r);
     }
-    if (STATE.cmp !== 'all' && r.cmp !== STATE.cmp) return false;
-    return true;
-  });
+  }
+  return out;
 }
 
 function bucketKey(d, gran){
