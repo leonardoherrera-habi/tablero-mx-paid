@@ -571,7 +571,8 @@ document.getElementById('cmpSelect').addEventListener('change', e => {
 // Load
 // ----------------------------------------------------------------------------
 fetch('data.json').then(r => r.json()).then(data => {
-  RAW = data;
+  // BQ JSON export sends ints as strings — coerce fid so comparisons work.
+  RAW = data.map(r => ({ ...r, fid: parseInt(r.fid, 10) }));
   const dates = [...new Set(RAW.map(r => r.d))].sort();
   if (dates.length){
     document.getElementById('lastUpdate').textContent = `Datos hasta ${dates[dates.length-1]} · ${dates.length} días`;
