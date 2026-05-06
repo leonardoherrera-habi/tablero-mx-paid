@@ -52,6 +52,7 @@ jobs:
                   'fid': int(r['fid']),
                   'pl': r.get('pl') or None,
                   'cmp': r.get('cmp') or None,
+                  'sub': r.get('sub') or None,
                   'imp': int(r['imp']),
                   'clk': int(r['clk']),
                   'spend': round(float(r.get('spend') or 0), 2),
@@ -64,8 +65,8 @@ jobs:
               rows.append(row)
           with open('data.json', 'w') as f:
               json.dump(rows, f, separators=(',', ':'))
-          spend_rows = sum(1 for r in rows if r['fid'] == 0)
-          lead_rows = sum(1 for r in rows if r['fid'] != 0)
+          spend_rows = sum(1 for r in rows if r['spend'] > 0 or r['imp'] > 0)
+          lead_rows  = sum(1 for r in rows if r['cre']   > 0)
           print(f'Total rows: {len(rows)} | spend: {spend_rows} | leads: {lead_rows}')
           "
 

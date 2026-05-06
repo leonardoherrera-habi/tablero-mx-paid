@@ -15,6 +15,7 @@
     --accent-web: #38bdf8;
     --accent-lf: #f472b6;
     --accent-ei: #34d399;
+    --accent-nc: #94a3b8;
     --accent-google: #fbbf24;
     --accent-fb: #60a5fa;
     --accent-bing: #a78bfa;
@@ -29,6 +30,7 @@
     --accent-web: #0284c7;
     --accent-lf: #db2777;
     --accent-ei: #059669;
+    --accent-nc: #64748b;
     --accent-google: #d97706;
     --accent-fb: #2563eb;
     --accent-bing: #7c3aed;
@@ -80,10 +82,19 @@
   .tbl-card tbody tr:hover td { background: var(--card-hover); }
   .tbl-card tbody tr.total-row:hover td { background: var(--row-total); }
 
+  .tbl-card thead th[data-sort] { cursor: pointer; user-select: none; }
+  .tbl-card thead th[data-sort]:hover { color: var(--accent); }
+  .tbl-card thead th.sort-active { color: var(--accent); }
+  .tbl-card thead th.sort-active::after { content: ' ▼'; font-size: 9px; }
+  .tbl-card thead th.sort-active.sort-asc::after { content: ' ▲'; }
+  .bd-toggle { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .bd-toggle:hover { background: var(--card-hover); color: var(--accent); border-color: var(--accent); }
+
   .src-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; color: white; }
   .src-badge.web { background: var(--accent-web); }
   .src-badge.lf { background: var(--accent-lf); }
   .src-badge.ei { background: var(--accent-ei); }
+  .src-badge.nc { background: var(--accent-nc); }
   .src-badge.google { background: var(--accent-google); color: #1f2937; }
   .src-badge.fb { background: var(--accent-fb); }
   .src-badge.bing { background: var(--accent-bing); }
@@ -102,7 +113,7 @@
   </div>
 </div>
 <div class="subtitle">
-  México · Cohorte por fecha de creación del lead, cruzado con inversión paid media (Google, Facebook, Bing) vía UTM dict <code>registro_unico_utm_mkt_mexico</code>. Día actual excluido. Al filtrar por <strong>Web</strong> o <strong>Estudio Inmueble</strong> el <strong>spend se prorratea</strong> según la mezcla de leads matched de cada campaña. <strong>LF</strong> queda como universo aparte (sin spend).
+  México · Cohorte por fecha de creación del lead, cruzado con inversión paid media (Google, Facebook, Bing) vía UTM dict <code>registro_unico_utm_mkt_mexico</code>. Día actual excluido. <strong>Atribución alineada con tablero de Camilo Otoya (llave: <code>mkt_channel_big</code>):</strong> tanto leads como spend se reasignan a Web / EI / LF / Otros (Brand y Propiedades) según el canal nativo de cada campaña en el UTM dict. Si la <code>campana_mercadeo</code> del lead es nula o no matchea, se mantiene su <code>fuente_id</code> original.
 </div>
 
 <script>
@@ -150,6 +161,7 @@
       <button class="pill" data-s="3"><span class="src-badge web">WEB</span></button>
       <button class="pill" data-s="47"><span class="src-badge lf">LF</span></button>
       <button class="pill" data-s="7"><span class="src-badge ei">Estudio Inm.</span></button>
+      <button class="pill" data-s="0"><span class="src-badge nc">Otros</span></button>
     </div>
   </div>
   <div class="control-group">
@@ -217,24 +229,54 @@
   </table>
 </div>
 
-<div class="section-title" id="breakdownTitle">Desglose por plataforma × campaña <span class="hint">spend + leads matched (Web/EI)</span></div>
+<div class="section-title">Desglose por fuente × sub-fuente <span class="hint">Web Paid / Web Direct / Web Community / Web Referral, equivalentes para EI y LF (mkt_channel_medium)</span></div>
 <div class="tbl-card">
-  <table id="bdTable">
+  <table id="subTable">
     <thead>
       <tr>
-        <th>Plataforma / Campaña</th>
+        <th>Fuente</th>
+        <th style="text-align:left">Sub-fuente</th>
         <th>Inversión</th>
-        <th>Impr.</th>
-        <th>Clicks</th>
         <th>Creados</th>
         <th>Calificados</th>
         <th>Asignados</th>
         <th>Cierres</th>
-        <th class="sep">% CTR</th>
-        <th>CPC</th>
-        <th>CP Lead</th>
+        <th class="sep">CP Lead</th>
         <th>CP Calif.</th>
         <th>CP Cierre</th>
+        <th>% Calif.</th>
+        <th>% Cierre</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section-title" id="breakdownTitle">
+  Desglose por fuente × sub-fuente × plataforma × campaña
+  <span class="hint" id="bdHint">spend + leads matched · click headers para ordenar</span>
+  <span style="margin-left:auto" id="bdToggleWrap"></span>
+</div>
+<div class="tbl-card">
+  <table id="bdTable">
+    <thead>
+      <tr>
+        <th data-sort="fuente">Fuente</th>
+        <th data-sort="sub" style="text-align:left">Sub-fuente</th>
+        <th data-sort="pl" style="text-align:left">Plataforma</th>
+        <th data-sort="cmp" style="text-align:left">Campaña</th>
+        <th data-sort="spend" class="sort-active sort-desc">Inversión</th>
+        <th data-sort="imp">Impr.</th>
+        <th data-sort="clk">Clicks</th>
+        <th data-sort="cre">Creados</th>
+        <th data-sort="cal">Calificados</th>
+        <th data-sort="asg">Asignados</th>
+        <th data-sort="cie">Cierres</th>
+        <th data-sort="ctr" class="sep">% CTR</th>
+        <th data-sort="cpc">CPC</th>
+        <th data-sort="cpl">CP Lead</th>
+        <th data-sort="cpcal">CP Calif.</th>
+        <th data-sort="cpcie">CP Cierre</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -244,30 +286,35 @@
 <script>
 // ============================================================================
 // Contrato data.json — UNION de filas de spend + filas de leads.
+// Atribución unificada por mkt_channel_big del UTM dict (alinea con tablero
+// de Camilo Otoya). Tanto spend como leads se etiquetan por la misma llave.
 //
-//   Spend rows (fid=0):  inversión paid agregada (Google/Facebook/Bing).
-//                        cre/cal/asg/cit/cie siempre 0.
+//   Spend rows: inversión paid (Google/Facebook/Bing). fid = mkt_channel_big
+//               de la campaña paid: WEB→3, Estudio Inmueble→7, Lead Forms→47,
+//               Brand/Propiedades/no-match→0. cre/cal/asg/cit/cie siempre 0.
 //
-//   Lead rows (fid en 3, 7, 47): leads cohort por fecha_creacion.
-//                                imp/clk/spend siempre 0.
+//   Lead rows: leads cohort por fecha_creacion. fid = mkt_channel_big de la
+//              campana_mercadeo del LEAD (no del fuente_id de TIG). Si la
+//              campaña es null/''/'xxxxx' o no matchea dict, se cae al
+//              fuente_id original. imp/clk/spend siempre 0.
 //
 // {
 //   d:   "2026-04-29",   // fecha ISO
-//   fid: 0|3|7|47,       // 0=spend, 3=WEB, 7=Estudio Inmueble, 47=Lead Forms
+//   fid: 0|3|7|47,       // 0=Otros, 3=WEB, 7=EI, 47=LF
 //   pl:  "Google",       // plataforma (Google/Facebook/Bing) | null si no aplica
 //   cmp: "campaign_x",   // nombre de campaña | null si no aplica
+//   sub: "WEB Paid",     // sub-fuente (mkt_channel_medium del UTM dict). En leads
+//                        // sin UTM → "<Fuente> Direct" (LF: "Lead Forms Paid").
 //   imp, clk, spend,     // métricas paid (en spend rows)
 //   cre, cal, asg, cit, cie  // métricas funnel (en lead rows)
 // }
 //
-// Lógica filtro fuente:
-//   "Todas":  todas las filas
-//   Web (3) / EI (7): filas de esa fuente + filas spend (fid=0)
-//   LF (47): solo filas LF (sin spend — LF queda como universo aparte)
+// Lógica filtro fuente: filtro src=X trae solo filas con fid=X.
+//   "Todas" suma todo; Web+EI+LF+Otros = Todas (cuadre 100%).
 // ============================================================================
 
-const SRC_LABEL = {3:'WEB', 7:'Estudio Inmueble', 47:'Lead Forms'};
-const SRC_CLASS = {3:'web', 7:'ei', 47:'lf'};
+const SRC_LABEL = {0:'Otros', 3:'WEB', 7:'Estudio Inmueble', 47:'Lead Forms'};
+const SRC_CLASS = {0:'nc', 3:'web', 7:'ei', 47:'lf'};
 const PL_CLASS  = {Google:'google', Facebook:'fb', Bing:'bing'};
 
 let RAW = [];
@@ -316,60 +363,13 @@ function rangeStart(){
 
 function filteredRows(){
   const start = rangeStart();
-
-  // Pro-rata attribution: cuando filtras por Web o EI, el spend se reparte
-  // según la mezcla de leads matched que cada (día × plataforma × campaña)
-  // generó para esa fuente. Ej: campaña con 80% Web y 20% EI matched →
-  // 80% de su spend va a Web, 20% a EI. Si no hay leads matched para esa
-  // (d,pl,cmp), el spend se atribuye 100% a Web (default).
-  let shareMap = null;
-  if (STATE.src === '3' || STATE.src === '7') {
-    shareMap = {};
-    RAW.forEach(r => {
-      if (r.fid === 3 || r.fid === 7) {
-        const key = `${r.d}|${r.pl||''}|${r.cmp||''}`;
-        if (!shareMap[key]) shareMap[key] = { web: 0, ei: 0 };
-        if (r.fid === 3) shareMap[key].web += n(r.cre);
-        else              shareMap[key].ei  += n(r.cre);
-      }
-    });
-  }
-
-  function spendShare(r) {
-    if (STATE.src === 'all') return 1.0;
-    if (STATE.src === '47')  return 0.0;
-    const key = `${r.d}|${r.pl||''}|${r.cmp||''}`;
-    const s = shareMap[key];
-    if (!s || (s.web + s.ei === 0)) {
-      return STATE.src === '3' ? 1.0 : 0.0;
-    }
-    const total = s.web + s.ei;
-    return STATE.src === '3' ? s.web/total : s.ei/total;
-  }
-
   const out = [];
   for (const r of RAW) {
     if (r.d < start) continue;
     if (STATE.pl !== 'all' && r.pl !== STATE.pl) continue;
     if (STATE.cmp !== 'all' && r.cmp !== STATE.cmp) continue;
-
-    if (r.fid === 0) {
-      const share = spendShare(r);
-      if (share === 0) continue;
-      if (share === 1) {
-        out.push(r);
-      } else {
-        out.push({
-          ...r,
-          imp: Math.round(n(r.imp) * share),
-          clk: Math.round(n(r.clk) * share),
-          spend: num(r.spend) * share,
-        });
-      }
-    } else {
-      if (STATE.src !== 'all' && String(r.fid) !== STATE.src) continue;
-      out.push(r);
-    }
+    if (STATE.src !== 'all' && String(r.fid) !== STATE.src) continue;
+    out.push(r);
   }
   return out;
 }
@@ -494,30 +494,77 @@ function renderPeriodTables(rows){
 }
 
 // ----------------------------------------------------------------------------
-// Tabla breakdown por plataforma × campaña
+// Tabla breakdown por fuente × plataforma × campaña
 // ----------------------------------------------------------------------------
+const BD_TOP_DEFAULT = 50;
+let bdState = { sort: 'spend', dir: 'desc', showAll: false };
+
+function bdSortKey(row, key){
+  if (key === 'fuente') return SRC_LABEL[row.fid] || 'zz';
+  if (key === 'sub' || key === 'pl' || key === 'cmp') return row[key] || '';
+  if (key === 'ctr')   return row.imp ? row.clk / row.imp : -1;
+  if (key === 'cpc')   return row.clk ? row.spend / row.clk : -1;
+  if (key === 'cpl')   return row.cre ? row.spend / row.cre : -1;
+  if (key === 'cpcal') return row.cal ? row.spend / row.cal : -1;
+  if (key === 'cpcie') return row.cie ? row.spend / row.cie : -1;
+  return row[key] ?? 0;
+}
+
 function renderBreakdown(rows){
-  // Agrupa por (plataforma × campaña) — combina spend (fid=0) con leads (fid=3,7)
-  // del mismo bucket. Filtra rows sin plataforma (LF, orgánico no matched).
+  // Agrupa por (fid × sub × plataforma × campaña). Solo filas con plataforma —
+  // leads sin campana_mercadeo matched no se ven aquí (se cuentan en KPIs/totales
+  // y en la tabla de sub-fuentes superior).
   const eligible = rows.filter(r => r.pl);
-  const buckets = aggregate(eligible, r => `${r.pl}|${r.cmp || '(sin campaña)'}`);
-  const arr = [...buckets.entries()].map(([k, a]) => {
-    const [pl, cmp] = k.split('|');
-    return { pl, cmp, ...a };
-  }).sort((a,b) => b.spend - a.spend);
+  const buckets = aggregate(eligible, r => `${r.fid}|${r.sub || ''}|${r.pl}|${r.cmp || '(sin campaña)'}`);
+  let arr = [...buckets.entries()].map(([k, a]) => {
+    const [fid, sub, pl, cmp] = k.split('|');
+    return { fid: parseInt(fid,10), sub, pl, cmp, ...a };
+  });
+
+  arr.sort((a, b) => {
+    const va = bdSortKey(a, bdState.sort);
+    const vb = bdSortKey(b, bdState.sort);
+    const cmp = (typeof va === 'string') ? va.localeCompare(vb) : (va - vb);
+    return bdState.dir === 'asc' ? cmp : -cmp;
+  });
 
   const tbody = document.querySelector('#bdTable tbody');
-  if (!arr.length){
-    tbody.innerHTML = `<tr><td colspan="13" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos paid (cambia el filtro de fuente a Web/EI/Todas, o quita filtros)</td></tr>`;
+  const totalCount = arr.length;
+  const limited = (!bdState.showAll && totalCount > BD_TOP_DEFAULT);
+  const display = limited ? arr.slice(0, BD_TOP_DEFAULT) : arr;
+
+  // Toggle "ver todas / top N"
+  const tw = document.getElementById('bdToggleWrap');
+  if (totalCount > BD_TOP_DEFAULT) {
+    tw.innerHTML = `<button class="bd-toggle" id="bdToggle">${bdState.showAll ? `Mostrar top ${BD_TOP_DEFAULT}` : `Mostrar todas (${totalCount})`}</button>`;
+    document.getElementById('bdToggle').onclick = () => { bdState.showAll = !bdState.showAll; renderBreakdown(filteredRows()); };
+  } else {
+    tw.innerHTML = '';
+  }
+
+  // Header arrows
+  document.querySelectorAll('#bdTable thead th[data-sort]').forEach(th => {
+    th.classList.toggle('sort-active', th.dataset.sort === bdState.sort);
+    th.classList.toggle('sort-asc',  th.dataset.sort === bdState.sort && bdState.dir === 'asc');
+    th.classList.toggle('sort-desc', th.dataset.sort === bdState.sort && bdState.dir === 'desc');
+  });
+
+  if (!display.length){
+    tbody.innerHTML = `<tr><td colspan="16" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos para los filtros seleccionados</td></tr>`;
     return;
   }
   const total = emptyAgg();
-  eligible.forEach(r => addInto(total, r));
+  arr.forEach(row => addInto(total, row));
   let html = '';
-  arr.forEach(row => {
-    const plCls = PL_CLASS[row.pl] || '';
+  display.forEach(row => {
+    const fidCls = SRC_CLASS[row.fid] || 'nc';
+    const fidLbl = SRC_LABEL[row.fid] || `fid${row.fid}`;
+    const plCls  = PL_CLASS[row.pl] || '';
     html += `<tr>
-      <td><span class="src-badge ${plCls}">${row.pl}</span> ${row.cmp}</td>
+      <td><span class="src-badge ${fidCls}">${fidLbl}</span></td>
+      <td style="text-align:left;font-weight:400">${row.sub || '—'}</td>
+      <td style="text-align:left"><span class="src-badge ${plCls}">${row.pl}</span></td>
+      <td style="text-align:left;font-weight:400">${row.cmp}</td>
       <td>${fmtMXN(row.spend)}</td>
       <td>${fmt(row.imp)}</td>
       <td>${fmt(row.clk)}</td>
@@ -532,8 +579,9 @@ function renderBreakdown(rows){
       <td>${fmtCP(row.spend, row.cie)}</td>
     </tr>`;
   });
+  const totalLabel = limited ? `Total (${totalCount} filas, mostrando top ${BD_TOP_DEFAULT})` : `Total (${totalCount} filas)`;
   html += `<tr class="total-row">
-    <td>Total</td>
+    <td colspan="4">${totalLabel}</td>
     <td>${fmtMXN(total.spend)}</td>
     <td>${fmt(total.imp)}</td>
     <td>${fmt(total.clk)}</td>
@@ -551,19 +599,73 @@ function renderBreakdown(rows){
 }
 
 // ----------------------------------------------------------------------------
+// Tabla de sub-fuentes (Web Paid / Web Direct / Web Community / Web Referral, etc.)
+// Agrega TODAS las filas (incluye leads sin campaña matched), no solo las con
+// plataforma. Esto da visibilidad completa al spread de leads orgánicos vs paid.
+// ----------------------------------------------------------------------------
+function renderSubBreakdown(rows){
+  const buckets = aggregate(rows, r => `${r.fid}|${r.sub || '(sin sub)'}`);
+  const arr = [...buckets.entries()]
+    .map(([k, a]) => { const [fid, sub] = k.split('|'); return { fid: parseInt(fid,10), sub, ...a }; })
+    .sort((a, b) => (a.fid - b.fid) || (b.spend - a.spend) || (b.cre - a.cre));
+
+  const tbody = document.querySelector('#subTable tbody');
+  if (!arr.length) {
+    tbody.innerHTML = `<tr><td colspan="12" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos</td></tr>`;
+    return;
+  }
+  const total = emptyAgg();
+  arr.forEach(row => addInto(total, row));
+
+  let html = '';
+  arr.forEach(row => {
+    const fidCls = SRC_CLASS[row.fid] || 'nc';
+    const fidLbl = SRC_LABEL[row.fid] || `fid${row.fid}`;
+    html += `<tr>
+      <td><span class="src-badge ${fidCls}">${fidLbl}</span></td>
+      <td style="text-align:left">${row.sub}</td>
+      <td>${fmtMXN(row.spend)}</td>
+      <td>${fmt(row.cre)}</td>
+      <td>${fmt(row.cal)}</td>
+      <td>${fmt(row.asg)}</td>
+      <td>${fmt(row.cie)}</td>
+      <td class="sep">${fmtCP(row.spend, row.cre)}</td>
+      <td>${fmtCP(row.spend, row.cal)}</td>
+      <td>${fmtCP(row.spend, row.cie)}</td>
+      <td>${pct(row.cal, row.cre)}</td>
+      <td>${pct(row.cie, row.cre)}</td>
+    </tr>`;
+  });
+  html += `<tr class="total-row">
+    <td colspan="2">Total</td>
+    <td>${fmtMXN(total.spend)}</td>
+    <td>${fmt(total.cre)}</td>
+    <td>${fmt(total.cal)}</td>
+    <td>${fmt(total.asg)}</td>
+    <td>${fmt(total.cie)}</td>
+    <td class="sep">${fmtCP(total.spend, total.cre)}</td>
+    <td>${fmtCP(total.spend, total.cal)}</td>
+    <td>${fmtCP(total.spend, total.cie)}</td>
+    <td>${pct(total.cal, total.cre)}</td>
+    <td>${pct(total.cie, total.cre)}</td>
+  </tr>`;
+  tbody.innerHTML = html;
+}
+
+// ----------------------------------------------------------------------------
 // Campaign dropdown — repobla cuando cambian fuente o plataforma
 // ----------------------------------------------------------------------------
 function refreshCampaignSelect(){
   const sel = document.getElementById('cmpSelect');
   const cur = STATE.cmp;
   const start = rangeStart();
-  // Universo de campañas: spend rows (fid=0) y leads Web/EI con campaña matched.
+  // Universo de campañas: filas con campaña no nula que pasen el filtro src.
   // LF nunca tiene cmp, así que el dropdown queda vacío con src=LF.
   const universe = RAW.filter(r => {
     if (r.d < start) return false;
     if (!r.cmp) return false;
     if (STATE.src === '47') return false;
-    if (STATE.src !== 'all' && r.fid !== 0 && String(r.fid) !== STATE.src) return false;
+    if (STATE.src !== 'all' && String(r.fid) !== STATE.src) return false;
     if (STATE.pl !== 'all' && r.pl !== STATE.pl) return false;
     return true;
   });
@@ -582,6 +684,7 @@ function render(){
   const rows = filteredRows();
   renderKpis(rows);
   renderPeriodTables(rows);
+  renderSubBreakdown(rows);
   renderBreakdown(rows);
 }
 
@@ -603,6 +706,20 @@ wirePills('plPills',    'pl');
 document.getElementById('cmpSelect').addEventListener('change', e => {
   STATE.cmp = e.target.value;
   render();
+});
+
+// Click sobre headers de breakdown → ordenar
+document.querySelectorAll('#bdTable thead th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.sort;
+    if (bdState.sort === k) {
+      bdState.dir = bdState.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      bdState.sort = k;
+      bdState.dir = (k === 'fuente' || k === 'sub' || k === 'pl' || k === 'cmp') ? 'asc' : 'desc';
+    }
+    renderBreakdown(filteredRows());
+  });
 });
 
 // ----------------------------------------------------------------------------
