@@ -40,7 +40,17 @@ jobs:
 
       - name: Query MX Paid Media
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=500000 < query.sql > /tmp/mx_paid_raw.json
+          set +e
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < query.sql > /tmp/mx_paid_raw.json 2> /tmp/bq_err.log
+          RC=$?
+          echo "=== bq exit code: $RC ==="
+          echo "=== bq stderr ==="
+          cat /tmp/bq_err.log
+          echo "=== first 500 chars of stdout ==="
+          head -c 500 /tmp/mx_paid_raw.json
+          echo
+          echo "=== end ==="
+          exit $RC
 
       - name: Process data.json
         run: |
