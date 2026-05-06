@@ -23,8 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: google-github-actions/setup-gcloud@v2
-
+      # gcloud y bq vienen preinstalados en ubuntu-latest. No usamos
+      # setup-gcloud@v2 porque exige auth@v2, que no acepta authorized_user JSON.
       - name: Authenticate with user credentials (authorized_user JSON)
         env:
           GCP_CREDS: ${{ secrets.GCP_CREDENTIALS }}
