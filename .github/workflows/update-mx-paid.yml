@@ -24,16 +24,19 @@ jobs:
       - uses: actions/checkout@v4
 
       # gcloud y bq vienen preinstalados en ubuntu-latest. No usamos
-      # setup-gcloud@v2 porque exige auth@v2, que no acepta authorized_user JSON.
-      - name: Authenticate with user credentials (authorized_user JSON)
+      # setup-gcloud@v2 porque exige auth@v2 (solo acepta service_account JSON).
+      # No usamos `gcloud auth login --cred-file` porque la versión de gcloud
+      # del runner rechaza authorized_user JSON. En su lugar exportamos las
+      # env vars que bq lee directamente.
+      - name: Authenticate via ADC env vars (authorized_user JSON)
         env:
           GCP_CREDS: ${{ secrets.GCP_CREDENTIALS }}
         run: |
           printf '%s' "$GCP_CREDS" > "$HOME/adc.json"
-          gcloud auth login --cred-file="$HOME/adc.json" --quiet
           gcloud config set project "${{ secrets.GCP_PROJECT }}"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/adc.json" >> "$GITHUB_ENV"
           echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=$HOME/adc.json" >> "$GITHUB_ENV"
+          echo "GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT }}" >> "$GITHUB_ENV"
 
       - name: Query MX Paid Media
         run: |
