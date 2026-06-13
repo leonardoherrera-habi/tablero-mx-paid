@@ -1,742 +1,629 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
 <title>MX Paid Media — Tablero Marketing</title>
 <style>
   :root {
-    --bg: #0f172a; --card: #1e293b; --card-hover: #263348;
-    --border: #334155; --border-strong: #4b5563; --row-border: #283548;
-    --text: #e2e8f0; --text-title: #f8fafc;
-    --text-muted: #cbd5e1; --text-muted-2: #94a3b8; --text-muted-3: #64748b;
-    --accent: #818cf8; --accent-on: #f8fafc;
-    --accent-web: #38bdf8;
-    --accent-lf: #f472b6;
-    --accent-ei: #34d399;
-    --accent-nc: #94a3b8;
-    --accent-google: #fbbf24;
-    --accent-fb: #60a5fa;
-    --accent-bing: #a78bfa;
-    --row-total: #1a2744;
+    --bg:       #0f172a;
+    --surface:  #1e293b;
+    --border:   #334155;
+    --text:     #e2e8f0;
+    --muted:    #94a3b8;
+    --accent:   #818cf8;
+    --accent2:  #38bdf8;
+    --green:    #34d399;
+    --red:      #f87171;
+    --yellow:   #fbbf24;
   }
-  body.light {
-    --bg: #f5f7fa; --card: #ffffff; --card-hover: #f1f5f9;
-    --border: #e2e8f0; --border-strong: #cbd5e1; --row-border: #f1f5f9;
-    --text: #334155; --text-title: #0f172a;
-    --text-muted: #475569; --text-muted-2: #64748b; --text-muted-3: #94a3b8;
-    --accent: #6366f1;
-    --accent-web: #0284c7;
-    --accent-lf: #db2777;
-    --accent-ei: #059669;
-    --accent-nc: #64748b;
-    --accent-google: #d97706;
-    --accent-fb: #2563eb;
-    --accent-bing: #7c3aed;
-    --row-total: #eef2ff;
+  [data-theme="light"] {
+    --bg:      #f1f5f9;
+    --surface: #ffffff;
+    --border:  #e2e8f0;
+    --text:    #0f172a;
+    --muted:   #64748b;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: background 0.2s, color 0.2s; }
-  .back-link { display: inline-block; color: var(--text-muted-2); text-decoration: none; font-size: 13px; margin-bottom: 16px; padding: 4px 10px; border-radius: 6px; transition: background 0.15s, color 0.15s; }
-  .back-link:hover { background: var(--card); color: var(--accent); }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 12px; }
-  .header h1 { font-size: 22px; font-weight: 600; color: var(--text-title); }
-  .header .refresh-info { font-size: 13px; color: var(--text-muted-3); display: flex; align-items: center; gap: 10px; }
-  .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; padding: 4px 10px; font-size: 14px; cursor: pointer; transition: background 0.15s, color 0.15s; }
-  .theme-btn:hover { background: var(--card-hover); color: var(--accent); }
-  .subtitle { font-size: 13px; color: var(--text-muted-3); margin-bottom: 20px; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:13px; line-height:1.5; }
 
-  .controls { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-  .control-group { display: flex; gap: 8px; align-items: center; }
-  .control-label { font-size: 11px; color: var(--text-muted-2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-  .pill-group { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .pill { padding: 7px 14px; font-size: 13px; color: var(--text-muted-2); cursor: pointer; border: none; background: transparent; transition: background 0.15s, color 0.15s; }
-  .pill:hover { background: var(--card-hover); color: var(--text); }
-  .pill.active { background: var(--accent); color: var(--accent-on); font-weight: 600; }
-  .pill + .pill { border-left: 1px solid var(--border); }
-  .pill[disabled] { opacity: 0.4; cursor: not-allowed; }
-  select.cmp-select { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 8px; font-size: 13px; min-width: 220px; max-width: 360px; }
-  select.cmp-select:focus { outline: none; border-color: var(--accent); }
+  /* ── Header ── */
+  header { background:var(--surface); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+  .header-left { display:flex; align-items:center; gap:16px; }
+  .back-link { color:var(--muted); text-decoration:none; font-size:12px; }
+  .back-link:hover { color:var(--accent); }
+  header h1 { font-size:15px; font-weight:600; letter-spacing:.02em; }
+  .header-meta { font-size:11px; color:var(--muted); }
+  .theme-btn { background:none; border:1px solid var(--border); color:var(--muted); padding:5px 10px; border-radius:6px; cursor:pointer; font-size:13px; }
+  .theme-btn:hover { border-color:var(--accent); color:var(--accent); }
 
-  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
-  .kpi { background: var(--card); border-radius: 10px; padding: 16px; border: 1px solid var(--border); }
-  .kpi .label { font-size: 11px; color: var(--text-muted-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 600; }
-  .kpi .value { font-size: 22px; font-weight: 700; color: var(--text-title); }
-  .kpi .sub { font-size: 11px; color: var(--text-muted-3); margin-top: 4px; }
+  /* ── Layout ── */
+  main { padding:20px 24px; max-width:1600px; margin:0 auto; }
 
-  .section-title { font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px; display: flex; align-items: center; gap: 12px; }
-  .section-title .hint { font-size: 11px; color: var(--text-muted-3); text-transform: none; letter-spacing: 0; font-weight: 400; }
+  /* ── Filters ── */
+  .filters { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin-bottom:20px; display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; }
+  .filter-group { display:flex; flex-direction:column; gap:5px; }
+  .filter-group label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  select { background:var(--bg); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer; min-width:110px; }
+  select:focus { outline:none; border-color:var(--accent); }
+  .filter-sep { width:1px; background:var(--border); align-self:stretch; margin:0 4px; }
+  .last-update { margin-left:auto; font-size:11px; color:var(--muted); align-self:center; }
 
-  .tbl-card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; }
-  .tbl-card table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
-  .tbl-card thead th { background: var(--border); color: var(--text-muted-2); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; padding: 10px 10px; text-align: right; white-space: nowrap; position: sticky; top: 0; }
-  .tbl-card thead th:first-child { text-align: left; padding-left: 18px; }
-  .tbl-card thead th.sep { border-left: 2px solid var(--border-strong); }
-  .tbl-card tbody td { padding: 9px 10px; text-align: right; border-top: 1px solid var(--row-border); white-space: nowrap; }
-  .tbl-card tbody td:first-child { text-align: left; font-weight: 500; color: var(--text-muted); padding-left: 18px; }
-  .tbl-card tbody td.sep { border-left: 2px solid var(--border-strong); }
-  .tbl-card tbody td.zero { color: var(--text-muted-3); }
-  .tbl-card tbody td.na { color: var(--text-muted-3); font-weight: 400; }
-  .tbl-card tbody tr.total-row td { font-weight: 700; background: var(--row-total); color: var(--text-title); border-top: 2px solid var(--border-strong); }
-  .tbl-card tbody tr:hover td { background: var(--card-hover); }
-  .tbl-card tbody tr.total-row:hover td { background: var(--row-total); }
+  /* ── Section cards ── */
+  .section { background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:20px; overflow:hidden; }
+  .section-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:baseline; gap:10px; }
+  .section-title { font-size:13px; font-weight:600; }
+  .section-sub { font-size:11px; color:var(--muted); }
 
-  .tbl-card thead th[data-sort] { cursor: pointer; user-select: none; }
-  .tbl-card thead th[data-sort]:hover { color: var(--accent); }
-  .tbl-card thead th.sort-active { color: var(--accent); }
-  .tbl-card thead th.sort-active::after { content: ' ▼'; font-size: 9px; }
-  .tbl-card thead th.sort-active.sort-asc::after { content: ' ▲'; }
-  .bd-toggle { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; text-transform: none; letter-spacing: 0; font-weight: 400; }
-  .bd-toggle:hover { background: var(--card-hover); color: var(--accent); border-color: var(--accent); }
+  /* ── Tables ── */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  thead th { background:var(--bg); color:var(--muted); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; padding:9px 12px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; position:sticky; top:0; }
+  thead th:first-child, thead th:nth-child(2) { text-align:left; }
+  thead th:hover { color:var(--accent); }
+  thead th .sort-icon { opacity:.4; margin-left:3px; font-size:9px; }
+  thead th.sorted-asc .sort-icon::after { content:'▲'; opacity:1; }
+  thead th.sorted-desc .sort-icon::after { content:'▼'; opacity:1; }
+  thead th:not(.sorted-asc):not(.sorted-desc) .sort-icon::after { content:'⇅'; }
 
-  .src-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; color: white; }
-  .src-badge.web { background: var(--accent-web); }
-  .src-badge.lf { background: var(--accent-lf); }
-  .src-badge.ei { background: var(--accent-ei); }
-  .src-badge.nc { background: var(--accent-nc); }
-  .src-badge.google { background: var(--accent-google); color: #1f2937; }
-  .src-badge.fb { background: var(--accent-fb); }
-  .src-badge.bing { background: var(--accent-bing); }
+  tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:rgba(129,140,248,.06); }
+  tbody td { padding:9px 12px; color:var(--text); white-space:nowrap; text-align:right; }
+  tbody td:first-child, tbody td:nth-child(2) { text-align:left; }
 
-  @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 600px) { .kpis { grid-template-columns: 1fr; } }
+  .td-period { font-weight:500; color:var(--accent2); }
+  .td-source { font-weight:500; }
+  .td-sub { color:var(--muted); font-size:11px; }
+  .td-plat { }
+  .td-campaign { max-width:180px; overflow:hidden; text-overflow:ellipsis; color:var(--muted); font-size:11px; }
+  .td-money { color:var(--yellow); }
+  .td-leads { color:var(--text); }
+  .td-rate { color:var(--green); }
+  .td-cost { color:var(--accent); }
+  .td-zero { color:var(--border); }
+
+  /* totals row */
+  .row-total td { font-weight:600; background:rgba(129,140,248,.07); color:var(--accent) !important; }
+
+  /* empty state */
+  .empty { padding:48px; text-align:center; color:var(--muted); }
+  .empty-icon { font-size:32px; margin-bottom:8px; }
+  .empty p { font-size:12px; }
+
+  /* loading */
+  .loading { padding:32px; text-align:center; color:var(--muted); font-size:12px; }
+  .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; margin-right:8px; vertical-align:middle; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* badge */
+  .badge { display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:600; }
+  .badge-google { background:rgba(59,130,246,.15); color:#60a5fa; }
+  .badge-facebook { background:rgba(99,102,241,.15); color:#818cf8; }
+  .badge-bing { background:rgba(20,184,166,.15); color:#2dd4bf; }
+  .badge-otros { background:rgba(148,163,184,.1); color:var(--muted); }
+
+  /* no data warning */
+  .no-data-banner { background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.2); border-radius:8px; padding:12px 16px; margin-bottom:20px; font-size:12px; color:var(--yellow); }
+  .no-data-banner strong { display:block; margin-bottom:2px; }
 </style>
 </head>
 <body>
-<a href="../" class="back-link">← Volver (Tableros Marketing Sellers)</a>
-<div class="header">
-  <h1>MX Paid Media — Funnel + Inversión</h1>
-  <div class="refresh-info">
-    <span id="lastUpdate"></span>
-    <button type="button" class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">🌙</button>
+
+<header>
+  <div class="header-left">
+    <a class="back-link" href="https://leonardoherrera-habi.github.io/">← Volver (Tableros Marketing Sellers)</a>
+    <h1>MX Paid Media — Funnel + Inversión</h1>
   </div>
-</div>
-<div class="subtitle">
-  México · Cohorte por fecha de creación del lead, cruzado con inversión paid media (Google, Facebook, Bing) vía UTM dict <code>registro_unico_utm_mkt_mexico</code>. Día actual excluido. <strong>Atribución alineada con tablero de Camilo Otoya (llave: <code>mkt_channel_big</code>):</strong> tanto leads como spend se reasignan a Web / EI / LF / Otros (Brand y Propiedades) según el canal nativo de cada campaña en el UTM dict. Si la <code>campana_mercadeo</code> del lead es nula o no matchea, se mantiene su <code>fuente_id</code> original.
-</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="header-meta" id="last-update-header">—</span>
+    <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+  </div>
+</header>
+
+<main>
+  <p style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.7;">
+    México · Cohorte por fecha de creación del lead, cruzado con inversión paid media (Google, Facebook, Bing) vía UTM dict <code style="background:var(--surface);padding:1px 5px;border-radius:3px;">registro_unico_utm_mkt_mexico</code>. Día actual excluido.
+    <strong style="color:var(--text);">Atribución alineada con tablero de Camilo Otoya (llave: <code style="background:var(--surface);padding:1px 5px;border-radius:3px;">mkt_channel_big</code>):</strong>
+    tanto leads como spend se reasignan a Web / EI / LF / Otros según el canal nativo de cada campaña. Si la <code style="background:var(--surface);padding:1px 5px;border-radius:3px;">campana_mercadeo</code> es nula o no matchea, se mantiene el <code style="background:var(--surface);padding:1px 5px;border-radius:3px;">fuente_id</code> original.
+  </p>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <label>Periodo</label>
+      <select id="f-periodo" onchange="applyFilters()">
+        <option value="7">7 días</option>
+        <option value="30" selected>30 días</option>
+        <option value="90">90 días</option>
+        <option value="ytd">YTD</option>
+        <option value="all">Todo</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Granularidad</label>
+      <select id="f-gran" onchange="applyFilters()">
+        <option value="day">Día</option>
+        <option value="week" selected>Semana</option>
+        <option value="month">Mes</option>
+        <option value="quarter">Trim.</option>
+        <option value="year">Año</option>
+      </select>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <label>Fuente</label>
+      <select id="f-fuente" onchange="applyFilters()">
+        <option value="">Todas</option>
+        <option value="Web">WEB</option>
+        <option value="LF">LF</option>
+        <option value="EI">Estudio Inm.</option>
+        <option value="Otros">Otros</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Plataforma</label>
+      <select id="f-plat" onchange="applyFilters()">
+        <option value="">Todas</option>
+        <option value="google">Google</option>
+        <option value="facebook">Facebook</option>
+        <option value="bing">Bing</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Campaña</label>
+      <select id="f-camp" onchange="applyFilters()">
+        <option value="">Todas</option>
+      </select>
+    </div>
+    <span class="last-update" id="last-update">Cargando datos…</span>
+  </div>
+
+  <!-- No data warning (hidden by default) -->
+  <div class="no-data-banner" id="no-data-banner" style="display:none">
+    <strong>⚠ Sin datos disponibles</strong>
+    El archivo <code>data.json</code> aún no ha sido generado. Configura la automatización con GitHub Actions para que los datos se actualicen diariamente desde BigQuery.
+  </div>
+
+  <!-- Sección 1: Volumen -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Volumen por periodo</span>
+      <span class="section-sub">conteos crudos del funnel</span>
+    </div>
+    <div class="table-wrap">
+      <table id="t-volumen">
+        <thead>
+          <tr>
+            <th onclick="sortTable('t-volumen',0)">Periodo<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',1)">Impressions<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',2)">Clicks<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',3)">Creados<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',4)">Calificados<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',5)">Asignados<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',6)">Cita Agend.<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',7)">Cierres<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',8)">Asg/Cierre<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',9)">% CTR<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',10)">% Click→Lead<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',11)">% Conv. Rate<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',12)">% Tasa Asg.<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',13)">% Cita Agend.<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-volumen',14)">% Cierre<span class="sort-icon"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tb-volumen"><tr><td colspan="15" class="loading"><span class="spinner"></span>Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sección 2: Costos -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Costos por periodo</span>
+      <span class="section-sub">inversión y costo por etapa</span>
+    </div>
+    <div class="table-wrap">
+      <table id="t-costos">
+        <thead>
+          <tr>
+            <th onclick="sortTable('t-costos',0)">Periodo<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-costos',1)">Inversión<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-costos',2)">CPM<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-costos',3)">CPC (clk)<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-costos',4)">CP Lead<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-costos',5)">CP Calificado<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-costos',6)">CP Asignado<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-costos',7)">CP Cita<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-costos',8)">CP Cierre<span class="sort-icon"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tb-costos"><tr><td colspan="9" class="loading"><span class="spinner"></span>Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sección 3: Fuente × Sub-fuente -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Desglose por fuente × sub-fuente</span>
+      <span class="section-sub">Web Paid / Web Direct / Web Community / Web Referral, equivalentes para EI y LF (<code>mkt_channel_medium</code>)</span>
+    </div>
+    <div class="table-wrap">
+      <table id="t-fuente">
+        <thead>
+          <tr>
+            <th onclick="sortTable('t-fuente',0)">Fuente<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',1)">Sub-fuente<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',2)">Inversión<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',3)">Creados<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',4)">Calificados<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',5)">Asignados<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',6)">Cierres<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',7)">CP Lead<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',8)">CP Calif.<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',9)">CP Cierre<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',10)">% Calif.<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',11)">% Cierre<span class="sort-icon"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tb-fuente"><tr><td colspan="12" class="loading"><span class="spinner"></span>Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sección 4: Granular -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Desglose por fuente × sub-fuente × plataforma × campaña</span>
+      <span class="section-sub">spend + leads matched · click headers para ordenar</span>
+    </div>
+    <div class="table-wrap">
+      <table id="t-gran">
+        <thead>
+          <tr>
+            <th onclick="sortTable('t-gran',0)">Fuente<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',1)">Sub-fuente<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',2)">Plataforma<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',3)">Campaña<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',4)">Inversión<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',5)">Impr.<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',6)">Clicks<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',7)">Creados<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',8)">Calificados<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',9)">Asignados<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',10)">Cierres<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',11)">% CTR<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',12)">CPC<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',13)">CP Lead<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',14)">CP Calif.<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',15)">CP Cierre<span class="sort-icon"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tb-gran"><tr><td colspan="16" class="loading"><span class="spinner"></span>Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
 
 <script>
-  (function(){
-    const saved = localStorage.getItem('tablero-theme');
-    if (saved !== 'dark') document.body.classList.add('light');
-    const btn = document.getElementById('themeToggle');
-    if (btn) btn.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
-  })();
-  function toggleTheme(){
-    document.body.classList.toggle('light');
-    const isLight = document.body.classList.contains('light');
-    localStorage.setItem('tablero-theme', isLight ? 'light' : 'dark');
-    document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
-  }
-</script>
+// ─── Estado global ────────────────────────────────────────────────────────────
+let RAW_DATA = [];
+let sortState = {};
 
-<div class="controls">
-  <div class="control-group">
-    <span class="control-label">Periodo</span>
-    <div class="pill-group" id="rangePills">
-      <button class="pill" data-r="7">7 días</button>
-      <button class="pill" data-r="30">30 días</button>
-      <button class="pill active" data-r="90">90 días</button>
-      <button class="pill" data-r="ytd">YTD</button>
-      <button class="pill" data-r="all">Todo</button>
-    </div>
-  </div>
-  <div class="control-group">
-    <span class="control-label">Granularidad</span>
-    <div class="pill-group" id="granPills">
-      <button class="pill" data-g="D">Día</button>
-      <button class="pill" data-g="W">Semana</button>
-      <button class="pill active" data-g="M">Mes</button>
-      <button class="pill" data-g="Q">Trim.</button>
-      <button class="pill" data-g="Y">Año</button>
-    </div>
-  </div>
-</div>
-<div class="controls">
-  <div class="control-group">
-    <span class="control-label">Fuente</span>
-    <div class="pill-group" id="srcPills">
-      <button class="pill active" data-s="all">Todas</button>
-      <button class="pill" data-s="3"><span class="src-badge web">WEB</span></button>
-      <button class="pill" data-s="47"><span class="src-badge lf">LF</span></button>
-      <button class="pill" data-s="7"><span class="src-badge ei">Estudio Inm.</span></button>
-      <button class="pill" data-s="0"><span class="src-badge nc">Otros</span></button>
-    </div>
-  </div>
-  <div class="control-group">
-    <span class="control-label">Plataforma</span>
-    <div class="pill-group" id="plPills">
-      <button class="pill active" data-p="all">Todas</button>
-      <button class="pill" data-p="Google">Google</button>
-      <button class="pill" data-p="Facebook">Facebook</button>
-      <button class="pill" data-p="Bing">Bing</button>
-    </div>
-  </div>
-  <div class="control-group">
-    <span class="control-label">Campaña</span>
-    <select id="cmpSelect" class="cmp-select">
-      <option value="all">Todas</option>
-    </select>
-  </div>
-</div>
+// ─── Helpers de formato ───────────────────────────────────────────────────────
+const fmt = {
+  n:   v => v == null ? '—' : Number(v).toLocaleString('es-MX'),
+  pct: v => v == null || isNaN(v) ? '—' : Number(v).toFixed(1) + '%',
+  mxn: v => v == null ? '—' : '$' + Number(v).toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:0}),
+  ratio: (a, b) => (b && b > 0) ? (a / b).toFixed(1) + 'x' : '—',
+  safe: (a, b) => (b && b > 0) ? (a / b * 100) : null,
+  costo: (inv, n) => (n && n > 0 && inv > 0) ? '$' + (inv / n).toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:0}) : '—',
+};
 
-<div id="kpis" class="kpis"></div>
-
-<div class="section-title">Volumen por periodo <span class="hint">conteos crudos del funnel</span></div>
-<div class="tbl-card">
-  <table id="volTable">
-    <thead>
-      <tr>
-        <th>Periodo</th>
-        <th>Impressions</th>
-        <th>Clicks</th>
-        <th class="sep">Creados</th>
-        <th>Calificados</th>
-        <th>Asignados</th>
-        <th>Cita Agend.</th>
-        <th>Cierres</th>
-        <th class="sep">Asg/Cierre</th>
-        <th>% CTR</th>
-        <th>% Click→Lead</th>
-        <th>% Conv. Rate</th>
-        <th>% Tasa Asg.</th>
-        <th>% Cita Agend.</th>
-        <th>% Cierre</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
-<div class="section-title">Costos por periodo <span class="hint">inversión y costo por etapa</span></div>
-<div class="tbl-card">
-  <table id="costTable">
-    <thead>
-      <tr>
-        <th>Periodo</th>
-        <th>Inversión</th>
-        <th class="sep">CPM</th>
-        <th>CPC (clk)</th>
-        <th class="sep">CP Lead</th>
-        <th>CP Calificado</th>
-        <th>CP Asignado</th>
-        <th>CP Cita</th>
-        <th>CP Cierre</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
-<div class="section-title">Desglose por fuente × sub-fuente <span class="hint">Web Paid / Web Direct / Web Community / Web Referral, equivalentes para EI y LF (mkt_channel_medium)</span></div>
-<div class="tbl-card">
-  <table id="subTable">
-    <thead>
-      <tr>
-        <th>Fuente</th>
-        <th style="text-align:left">Sub-fuente</th>
-        <th>Inversión</th>
-        <th>Creados</th>
-        <th>Calificados</th>
-        <th>Asignados</th>
-        <th>Cierres</th>
-        <th class="sep">CP Lead</th>
-        <th>CP Calif.</th>
-        <th>CP Cierre</th>
-        <th>% Calif.</th>
-        <th>% Cierre</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
-<div class="section-title" id="breakdownTitle">
-  Desglose por fuente × sub-fuente × plataforma × campaña
-  <span class="hint" id="bdHint">spend + leads matched · click headers para ordenar</span>
-  <span style="margin-left:auto" id="bdToggleWrap"></span>
-</div>
-<div class="tbl-card">
-  <table id="bdTable">
-    <thead>
-      <tr>
-        <th data-sort="fuente">Fuente</th>
-        <th data-sort="sub" style="text-align:left">Sub-fuente</th>
-        <th data-sort="pl" style="text-align:left">Plataforma</th>
-        <th data-sort="cmp" style="text-align:left">Campaña</th>
-        <th data-sort="spend" class="sort-active sort-desc">Inversión</th>
-        <th data-sort="imp">Impr.</th>
-        <th data-sort="clk">Clicks</th>
-        <th data-sort="cre">Creados</th>
-        <th data-sort="cal">Calificados</th>
-        <th data-sort="asg">Asignados</th>
-        <th data-sort="cie">Cierres</th>
-        <th data-sort="ctr" class="sep">% CTR</th>
-        <th data-sort="cpc">CPC</th>
-        <th data-sort="cpl">CP Lead</th>
-        <th data-sort="cpcal">CP Calif.</th>
-        <th data-sort="cpcie">CP Cierre</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
-<script>
-// ============================================================================
-// Contrato data.json — UNION de filas de spend + filas de leads.
-// Atribución unificada por mkt_channel_big del UTM dict (alinea con tablero
-// de Camilo Otoya). Tanto spend como leads se etiquetan por la misma llave.
-//
-//   Spend rows: inversión paid (Google/Facebook/Bing). fid = mkt_channel_big
-//               de la campaña paid: WEB→3, Estudio Inmueble→7, Lead Forms→47,
-//               Brand/Propiedades/no-match→0. cre/cal/asg/cit/cie siempre 0.
-//
-//   Lead rows: leads cohort por fecha_creacion. fid = mkt_channel_big de la
-//              campana_mercadeo del LEAD (no del fuente_id de TIG). Si la
-//              campaña es null/''/'xxxxx' o no matchea dict, se cae al
-//              fuente_id original. imp/clk/spend siempre 0.
-//
-// {
-//   d:   "2026-04-29",   // fecha ISO
-//   fid: 0|3|7|47,       // 0=Otros, 3=WEB, 7=EI, 47=LF
-//   pl:  "Google",       // plataforma (Google/Facebook/Bing) | null si no aplica
-//   cmp: "campaign_x",   // nombre de campaña | null si no aplica
-//   sub: "WEB Paid",     // sub-fuente (mkt_channel_medium del UTM dict). En leads
-//                        // sin UTM → "<Fuente> Direct" (LF: "Lead Forms Paid").
-//   imp, clk, spend,     // métricas paid (en spend rows)
-//   cre, cal, asg, cit, cie  // métricas funnel (en lead rows)
-// }
-//
-// Lógica filtro fuente: filtro src=X trae solo filas con fid=X.
-//   "Todas" suma todo; Web+EI+LF+Otros = Todas (cuadre 100%).
-// ============================================================================
-
-const SRC_LABEL = {0:'Otros', 3:'WEB', 7:'Estudio Inmueble', 47:'Lead Forms'};
-const SRC_CLASS = {0:'nc', 3:'web', 7:'ei', 47:'lf'};
-const PL_CLASS  = {Google:'google', Facebook:'fb', Bing:'bing'};
-
-let RAW = [];
-let STATE = { range:'90', gran:'M', src:'all', pl:'all', cmp:'all' };
-
-const today = new Date();
-function isoDate(d){ return d.toISOString().slice(0,10); }
-function parseDate(s){ return new Date(s + 'T00:00:00Z'); }
-
-function n(x){ return typeof x === 'string' ? parseInt(x,10) || 0 : (x || 0); }
-function num(x){ return typeof x === 'string' ? parseFloat(x) || 0 : (x || 0); }
-function fmt(v){ return v.toLocaleString('es-MX'); }
-function fmtMXN(v){ return '$' + Math.round(v).toLocaleString('es-MX'); }
-function fmtMXN2(v){ return '$' + v.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2}); }
-function fmtCP(spend, count){
-  if (!count) return '—';
-  const v = spend / count;
-  return v >= 100 ? fmtMXN(v) : fmtMXN2(v);
-}
-function fmtCPM(spend, imp){
-  if (!imp) return '—';
-  const v = spend * 1000 / imp;
-  return v >= 100 ? fmtMXN(v) : fmtMXN2(v);
-}
-function pct(num, den){
-  if (!den) return '—';
-  const p = 100 * num / den;
-  return p < 10 ? p.toFixed(2) + '%' : (p < 100 ? p.toFixed(1) + '%' : Math.round(p) + '%');
-}
-function ratio(num, den){
-  if (!den) return '—';
-  return (num / den).toFixed(1);
+function td(val, cls='') {
+  const v = (val === '—' || val == null) ? '<span style="opacity:.3">—</span>' : val;
+  return `<td class="${cls}">${v}</td>`;
 }
 
-// ----------------------------------------------------------------------------
-// Filtrado y agregación
-// ----------------------------------------------------------------------------
-function rangeStart(){
-  const r = STATE.range;
-  if (r === 'all') return '1900-01-01';
-  if (r === 'ytd') return today.getFullYear() + '-01-01';
-  const days = parseInt(r, 10);
-  const d = new Date(today); d.setUTCDate(d.getUTCDate() - days);
-  return isoDate(d);
+// ─── Periodo helpers ──────────────────────────────────────────────────────────
+function getDateRange(periodo) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  let from = new Date(0);
+  if (periodo === '7')  { from = new Date(today); from.setDate(from.getDate()-7); }
+  if (periodo === '30') { from = new Date(today); from.setDate(from.getDate()-30); }
+  if (periodo === '90') { from = new Date(today); from.setDate(from.getDate()-90); }
+  if (periodo === 'ytd'){ from = new Date(today.getFullYear(), 0, 1); }
+  return from;
 }
 
-function filteredRows(){
-  const start = rangeStart();
-  const out = [];
-  for (const r of RAW) {
-    if (r.d < start) continue;
-    if (STATE.pl !== 'all' && r.pl !== STATE.pl) continue;
-    if (STATE.cmp !== 'all' && r.cmp !== STATE.cmp) continue;
-    if (STATE.src !== 'all' && String(r.fid) !== STATE.src) continue;
-    out.push(r);
-  }
-  return out;
+function getPeriodKey(dateStr, gran) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (gran === 'day')     return dateStr.slice(0,10);
+  if (gran === 'week')    { const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay()+6)%7)); return 'W ' + mon.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}); }
+  if (gran === 'month')   return d.toLocaleDateString('es-MX',{month:'short',year:'numeric'});
+  if (gran === 'quarter') { const q = Math.ceil((d.getMonth()+1)/3); return `Q${q} ${d.getFullYear()}`; }
+  if (gran === 'year')    return String(d.getFullYear());
+  return dateStr.slice(0,10);
 }
 
-function bucketKey(d, gran){
-  const dt = parseDate(d);
-  const y = dt.getUTCFullYear();
-  if (gran === 'D') return d;
-  if (gran === 'M') return `${y}-${String(dt.getUTCMonth()+1).padStart(2,'0')}`;
-  if (gran === 'Y') return String(y);
-  if (gran === 'Q') return `${y}-Q${Math.floor(dt.getUTCMonth()/3)+1}`;
-  if (gran === 'W'){
-    // ISO week
-    const tmp = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate()));
-    const dayNum = tmp.getUTCDay() || 7;
-    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
-    return `${tmp.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
-  }
-  return d;
-}
+// ─── Filtrar y agregar datos ──────────────────────────────────────────────────
+function getFiltered() {
+  const periodo = document.getElementById('f-periodo').value;
+  const gran    = document.getElementById('f-gran').value;
+  const fuente  = document.getElementById('f-fuente').value;
+  const plat    = document.getElementById('f-plat').value;
+  const camp    = document.getElementById('f-camp').value;
+  const from    = getDateRange(periodo);
 
-function emptyAgg(){ return {imp:0, clk:0, spend:0, cre:0, cal:0, asg:0, cit:0, cie:0}; }
-function addInto(acc, r){
-  acc.imp   += n(r.imp);
-  acc.clk   += n(r.clk);
-  acc.spend += num(r.spend);
-  acc.cre   += n(r.cre);
-  acc.cal   += n(r.cal);
-  acc.asg   += n(r.asg);
-  acc.cit   += n(r.cit);
-  acc.cie   += n(r.cie);
-}
-
-function aggregate(rows, keyFn){
-  const m = new Map();
-  rows.forEach(r => {
-    const k = keyFn(r);
-    if (!m.has(k)) m.set(k, emptyAgg());
-    addInto(m.get(k), r);
-  });
-  return m;
-}
-
-// ----------------------------------------------------------------------------
-// KPIs
-// ----------------------------------------------------------------------------
-function renderKpis(rows){
-  const agg = emptyAgg();
-  rows.forEach(r => addInto(agg, r));
-  document.getElementById('kpis').innerHTML = `
-    <div class="kpi"><div class="label">Inversión</div><div class="value">${fmtMXN(agg.spend)}</div><div class="sub">${rows.length} filas</div></div>
-    <div class="kpi"><div class="label">Impressions / Clicks</div><div class="value">${fmt(agg.imp)}</div><div class="sub">${fmt(agg.clk)} clicks · CTR ${pct(agg.clk, agg.imp)}</div></div>
-    <div class="kpi"><div class="label">Creados → Calificados</div><div class="value">${fmt(agg.cre)} → ${fmt(agg.cal)}</div><div class="sub">Conv. ${pct(agg.cal, agg.cre)} · CP Lead ${fmtCP(agg.spend, agg.cre)}</div></div>
-    <div class="kpi"><div class="label">Asignados / Cierres</div><div class="value">${fmt(agg.asg)} / ${fmt(agg.cie)}</div><div class="sub">Asg/Cierre ${ratio(agg.asg, agg.cie)} · CP Cierre ${fmtCP(agg.spend, agg.cie)}</div></div>
-
-    <div class="kpi"><div class="label">CPM</div><div class="value">${fmtCPM(agg.spend, agg.imp)}</div><div class="sub">costo por mil impresiones</div></div>
-    <div class="kpi"><div class="label">CPC</div><div class="value">${fmtCP(agg.spend, agg.clk)}</div><div class="sub">costo por click</div></div>
-    <div class="kpi"><div class="label">CP Calificado</div><div class="value">${fmtCP(agg.spend, agg.cal)}</div><div class="sub">${pct(agg.cal, agg.cre)} qual rate</div></div>
-    <div class="kpi"><div class="label">CP Asignado</div><div class="value">${fmtCP(agg.spend, agg.asg)}</div><div class="sub">${pct(agg.asg, agg.cal)} tasa asig.</div></div>
-  `;
-}
-
-// ----------------------------------------------------------------------------
-// Tablas por periodo
-// ----------------------------------------------------------------------------
-function renderPeriodTables(rows){
-  const buckets = aggregate(rows, r => bucketKey(r.d, STATE.gran));
-  const keys = [...buckets.keys()].sort().reverse();
-  const total = emptyAgg();
-  rows.forEach(r => addInto(total, r));
-
-  const volBody = document.querySelector('#volTable tbody');
-  const costBody = document.querySelector('#costTable tbody');
-  let volHtml = '', costHtml = '';
-
-  function volRow(label, a, isTotal){
-    const cls = isTotal ? ' class="total-row"' : '';
-    return `<tr${cls}>
-      <td>${label}</td>
-      <td>${a.imp ? fmt(a.imp) : '<span class="zero">0</span>'}</td>
-      <td>${a.clk ? fmt(a.clk) : '<span class="zero">0</span>'}</td>
-      <td class="sep">${a.cre ? fmt(a.cre) : '<span class="zero">0</span>'}</td>
-      <td>${a.cal ? fmt(a.cal) : '<span class="zero">0</span>'}</td>
-      <td>${a.asg ? fmt(a.asg) : '<span class="zero">0</span>'}</td>
-      <td>${a.cit ? fmt(a.cit) : '<span class="zero">0</span>'}</td>
-      <td>${a.cie ? fmt(a.cie) : '<span class="zero">0</span>'}</td>
-      <td class="sep">${ratio(a.asg, a.cie)}</td>
-      <td>${pct(a.clk, a.imp)}</td>
-      <td>${pct(a.cre, a.clk)}</td>
-      <td>${pct(a.cal, a.cre)}</td>
-      <td>${pct(a.asg, a.cal)}</td>
-      <td>${pct(a.cit, a.asg)}</td>
-      <td>${pct(a.cie, a.cit)}</td>
-    </tr>`;
-  }
-  function costRow(label, a, isTotal){
-    const cls = isTotal ? ' class="total-row"' : '';
-    return `<tr${cls}>
-      <td>${label}</td>
-      <td>${fmtMXN(a.spend)}</td>
-      <td class="sep">${fmtCPM(a.spend, a.imp)}</td>
-      <td>${fmtCP(a.spend, a.clk)}</td>
-      <td class="sep">${fmtCP(a.spend, a.cre)}</td>
-      <td>${fmtCP(a.spend, a.cal)}</td>
-      <td>${fmtCP(a.spend, a.asg)}</td>
-      <td>${fmtCP(a.spend, a.cit)}</td>
-      <td>${fmtCP(a.spend, a.cie)}</td>
-    </tr>`;
-  }
-  keys.forEach(k => {
-    const a = buckets.get(k);
-    volHtml += volRow(k, a, false);
-    costHtml += costRow(k, a, false);
-  });
-  volHtml += volRow('Total', total, true);
-  costHtml += costRow('Total', total, true);
-
-  volBody.innerHTML = keys.length ? volHtml : `<tr><td colspan="15" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos para los filtros seleccionados</td></tr>`;
-  costBody.innerHTML = keys.length ? costHtml : `<tr><td colspan="9" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos</td></tr>`;
-}
-
-// ----------------------------------------------------------------------------
-// Tabla breakdown por fuente × plataforma × campaña
-// ----------------------------------------------------------------------------
-const BD_TOP_DEFAULT = 50;
-let bdState = { sort: 'spend', dir: 'desc', showAll: false };
-
-function bdSortKey(row, key){
-  if (key === 'fuente') return SRC_LABEL[row.fid] || 'zz';
-  if (key === 'sub' || key === 'pl' || key === 'cmp') return row[key] || '';
-  if (key === 'ctr')   return row.imp ? row.clk / row.imp : -1;
-  if (key === 'cpc')   return row.clk ? row.spend / row.clk : -1;
-  if (key === 'cpl')   return row.cre ? row.spend / row.cre : -1;
-  if (key === 'cpcal') return row.cal ? row.spend / row.cal : -1;
-  if (key === 'cpcie') return row.cie ? row.spend / row.cie : -1;
-  return row[key] ?? 0;
-}
-
-function renderBreakdown(rows){
-  // Agrupa por (fid × sub × plataforma × campaña). Solo filas con plataforma —
-  // leads sin campana_mercadeo matched no se ven aquí (se cuentan en KPIs/totales
-  // y en la tabla de sub-fuentes superior).
-  const eligible = rows.filter(r => r.pl);
-  const buckets = aggregate(eligible, r => `${r.fid}|${r.sub || ''}|${r.pl}|${r.cmp || '(sin campaña)'}`);
-  let arr = [...buckets.entries()].map(([k, a]) => {
-    const [fid, sub, pl, cmp] = k.split('|');
-    return { fid: parseInt(fid,10), sub, pl, cmp, ...a };
-  });
-
-  arr.sort((a, b) => {
-    const va = bdSortKey(a, bdState.sort);
-    const vb = bdSortKey(b, bdState.sort);
-    const cmp = (typeof va === 'string') ? va.localeCompare(vb) : (va - vb);
-    return bdState.dir === 'asc' ? cmp : -cmp;
-  });
-
-  const tbody = document.querySelector('#bdTable tbody');
-  const totalCount = arr.length;
-  const limited = (!bdState.showAll && totalCount > BD_TOP_DEFAULT);
-  const display = limited ? arr.slice(0, BD_TOP_DEFAULT) : arr;
-
-  // Toggle "ver todas / top N"
-  const tw = document.getElementById('bdToggleWrap');
-  if (totalCount > BD_TOP_DEFAULT) {
-    tw.innerHTML = `<button class="bd-toggle" id="bdToggle">${bdState.showAll ? `Mostrar top ${BD_TOP_DEFAULT}` : `Mostrar todas (${totalCount})`}</button>`;
-    document.getElementById('bdToggle').onclick = () => { bdState.showAll = !bdState.showAll; renderBreakdown(filteredRows()); };
-  } else {
-    tw.innerHTML = '';
-  }
-
-  // Header arrows
-  document.querySelectorAll('#bdTable thead th[data-sort]').forEach(th => {
-    th.classList.toggle('sort-active', th.dataset.sort === bdState.sort);
-    th.classList.toggle('sort-asc',  th.dataset.sort === bdState.sort && bdState.dir === 'asc');
-    th.classList.toggle('sort-desc', th.dataset.sort === bdState.sort && bdState.dir === 'desc');
-  });
-
-  if (!display.length){
-    tbody.innerHTML = `<tr><td colspan="16" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos para los filtros seleccionados</td></tr>`;
-    return;
-  }
-  const total = emptyAgg();
-  arr.forEach(row => addInto(total, row));
-  let html = '';
-  display.forEach(row => {
-    const fidCls = SRC_CLASS[row.fid] || 'nc';
-    const fidLbl = SRC_LABEL[row.fid] || `fid${row.fid}`;
-    const plCls  = PL_CLASS[row.pl] || '';
-    html += `<tr>
-      <td><span class="src-badge ${fidCls}">${fidLbl}</span></td>
-      <td style="text-align:left;font-weight:400">${row.sub || '—'}</td>
-      <td style="text-align:left"><span class="src-badge ${plCls}">${row.pl}</span></td>
-      <td style="text-align:left;font-weight:400">${row.cmp}</td>
-      <td>${fmtMXN(row.spend)}</td>
-      <td>${fmt(row.imp)}</td>
-      <td>${fmt(row.clk)}</td>
-      <td>${fmt(row.cre)}</td>
-      <td>${fmt(row.cal)}</td>
-      <td>${fmt(row.asg)}</td>
-      <td>${fmt(row.cie)}</td>
-      <td class="sep">${pct(row.clk, row.imp)}</td>
-      <td>${fmtCP(row.spend, row.clk)}</td>
-      <td>${fmtCP(row.spend, row.cre)}</td>
-      <td>${fmtCP(row.spend, row.cal)}</td>
-      <td>${fmtCP(row.spend, row.cie)}</td>
-    </tr>`;
-  });
-  const totalLabel = limited ? `Total (${totalCount} filas, mostrando top ${BD_TOP_DEFAULT})` : `Total (${totalCount} filas)`;
-  html += `<tr class="total-row">
-    <td colspan="4">${totalLabel}</td>
-    <td>${fmtMXN(total.spend)}</td>
-    <td>${fmt(total.imp)}</td>
-    <td>${fmt(total.clk)}</td>
-    <td>${fmt(total.cre)}</td>
-    <td>${fmt(total.cal)}</td>
-    <td>${fmt(total.asg)}</td>
-    <td>${fmt(total.cie)}</td>
-    <td class="sep">${pct(total.clk, total.imp)}</td>
-    <td>${fmtCP(total.spend, total.clk)}</td>
-    <td>${fmtCP(total.spend, total.cre)}</td>
-    <td>${fmtCP(total.spend, total.cal)}</td>
-    <td>${fmtCP(total.spend, total.cie)}</td>
-  </tr>`;
-  tbody.innerHTML = html;
-}
-
-// ----------------------------------------------------------------------------
-// Tabla de sub-fuentes (Web Paid / Web Direct / Web Community / Web Referral, etc.)
-// Agrega TODAS las filas (incluye leads sin campaña matched), no solo las con
-// plataforma. Esto da visibilidad completa al spread de leads orgánicos vs paid.
-// ----------------------------------------------------------------------------
-function renderSubBreakdown(rows){
-  const buckets = aggregate(rows, r => `${r.fid}|${r.sub || '(sin sub)'}`);
-  const arr = [...buckets.entries()]
-    .map(([k, a]) => { const [fid, sub] = k.split('|'); return { fid: parseInt(fid,10), sub, ...a }; })
-    .sort((a, b) => (a.fid - b.fid) || (b.spend - a.spend) || (b.cre - a.cre));
-
-  const tbody = document.querySelector('#subTable tbody');
-  if (!arr.length) {
-    tbody.innerHTML = `<tr><td colspan="12" style="padding:24px;color:var(--text-muted-3);text-align:center">Sin datos</td></tr>`;
-    return;
-  }
-  const total = emptyAgg();
-  arr.forEach(row => addInto(total, row));
-
-  let html = '';
-  arr.forEach(row => {
-    const fidCls = SRC_CLASS[row.fid] || 'nc';
-    const fidLbl = SRC_LABEL[row.fid] || `fid${row.fid}`;
-    html += `<tr>
-      <td><span class="src-badge ${fidCls}">${fidLbl}</span></td>
-      <td style="text-align:left">${row.sub}</td>
-      <td>${fmtMXN(row.spend)}</td>
-      <td>${fmt(row.cre)}</td>
-      <td>${fmt(row.cal)}</td>
-      <td>${fmt(row.asg)}</td>
-      <td>${fmt(row.cie)}</td>
-      <td class="sep">${fmtCP(row.spend, row.cre)}</td>
-      <td>${fmtCP(row.spend, row.cal)}</td>
-      <td>${fmtCP(row.spend, row.cie)}</td>
-      <td>${pct(row.cal, row.cre)}</td>
-      <td>${pct(row.cie, row.cre)}</td>
-    </tr>`;
-  });
-  html += `<tr class="total-row">
-    <td colspan="2">Total</td>
-    <td>${fmtMXN(total.spend)}</td>
-    <td>${fmt(total.cre)}</td>
-    <td>${fmt(total.cal)}</td>
-    <td>${fmt(total.asg)}</td>
-    <td>${fmt(total.cie)}</td>
-    <td class="sep">${fmtCP(total.spend, total.cre)}</td>
-    <td>${fmtCP(total.spend, total.cal)}</td>
-    <td>${fmtCP(total.spend, total.cie)}</td>
-    <td>${pct(total.cal, total.cre)}</td>
-    <td>${pct(total.cie, total.cre)}</td>
-  </tr>`;
-  tbody.innerHTML = html;
-}
-
-// ----------------------------------------------------------------------------
-// Campaign dropdown — repobla cuando cambian fuente o plataforma
-// ----------------------------------------------------------------------------
-function refreshCampaignSelect(){
-  const sel = document.getElementById('cmpSelect');
-  const cur = STATE.cmp;
-  const start = rangeStart();
-  // Universo de campañas: filas con campaña no nula que pasen el filtro src.
-  // LF nunca tiene cmp, así que el dropdown queda vacío con src=LF.
-  const universe = RAW.filter(r => {
-    if (r.d < start) return false;
-    if (!r.cmp) return false;
-    if (STATE.src === '47') return false;
-    if (STATE.src !== 'all' && String(r.fid) !== STATE.src) return false;
-    if (STATE.pl !== 'all' && r.pl !== STATE.pl) return false;
+  return RAW_DATA.filter(r => {
+    const d = new Date(r.fecha + 'T00:00:00');
+    if (d < from) return false;
+    if (fuente && r.canal !== fuente) return false;
+    if (plat   && r.plataforma !== plat) return false;
+    if (camp   && r.campana !== camp) return false;
     return true;
   });
-  const cmps = [...new Set(universe.map(r => r.cmp))].sort();
-  sel.innerHTML = '<option value="all">Todas</option>' + cmps.map(c => `<option value="${c}">${c}</option>`).join('');
-  if (cur === 'all' || cmps.includes(cur)) sel.value = cur;
-  else { sel.value = 'all'; STATE.cmp = 'all'; }
-  sel.disabled = STATE.src === '47';
 }
 
-// ----------------------------------------------------------------------------
-// Main render
-// ----------------------------------------------------------------------------
-function render(){
-  refreshCampaignSelect();
-  const rows = filteredRows();
-  renderKpis(rows);
-  renderPeriodTables(rows);
-  renderSubBreakdown(rows);
-  renderBreakdown(rows);
-}
-
-// ----------------------------------------------------------------------------
-// Wire up
-// ----------------------------------------------------------------------------
-function wirePills(groupId, key){
-  document.querySelectorAll(`#${groupId} .pill`).forEach(p => p.addEventListener('click', () => {
-    document.querySelectorAll(`#${groupId} .pill`).forEach(x => x.classList.remove('active'));
-    p.classList.add('active');
-    STATE[key] = p.dataset[key === 'range' ? 'r' : key === 'gran' ? 'g' : key === 'src' ? 's' : 'p'];
-    render();
-  }));
-}
-wirePills('rangePills', 'range');
-wirePills('granPills',  'gran');
-wirePills('srcPills',   'src');
-wirePills('plPills',    'pl');
-document.getElementById('cmpSelect').addEventListener('change', e => {
-  STATE.cmp = e.target.value;
-  render();
-});
-
-// Click sobre headers de breakdown → ordenar
-document.querySelectorAll('#bdTable thead th[data-sort]').forEach(th => {
-  th.addEventListener('click', () => {
-    const k = th.dataset.sort;
-    if (bdState.sort === k) {
-      bdState.dir = bdState.dir === 'asc' ? 'desc' : 'asc';
-    } else {
-      bdState.sort = k;
-      bdState.dir = (k === 'fuente' || k === 'sub' || k === 'pl' || k === 'cmp') ? 'asc' : 'desc';
-    }
-    renderBreakdown(filteredRows());
+function aggregate(rows, keyFn) {
+  const map = new Map();
+  rows.forEach(r => {
+    const k = keyFn(r);
+    if (!map.has(k)) map.set(k, {key:k, impr:0, clicks:0, creados:0, cal:0, asig:0, cita:0, cierres:0, inv:0, sub:r.sub_canal||'—', fuente:r.canal||'—', plat:r.plataforma||'—', camp:r.campana||'—'});
+    const a = map.get(k);
+    a.impr    += r.impressions    || 0;
+    a.clicks  += r.clicks         || 0;
+    a.creados += r.creados        || 0;
+    a.cal     += r.calificados    || 0;
+    a.asig    += r.asignados      || 0;
+    a.cita    += r.cita_agendada  || 0;
+    a.cierres += r.cierres        || 0;
+    a.inv     += r.inversion      || 0;
   });
-});
+  return [...map.values()].sort((a,b) => b.key > a.key ? -1 : 1);
+}
 
-// ----------------------------------------------------------------------------
-// Load
-// ----------------------------------------------------------------------------
-fetch('data.json').then(r => r.json()).then(data => {
-  // BQ JSON export sends ints as strings — coerce fid so comparisons work.
-  RAW = data.map(r => ({ ...r, fid: parseInt(r.fid, 10) }));
-  const dates = [...new Set(RAW.map(r => r.d))].sort();
-  if (dates.length){
-    document.getElementById('lastUpdate').textContent = `Datos hasta ${dates[dates.length-1]} · ${dates.length} días`;
+// ─── Render tablas ─────────────────────────────────────────────────────────────
+function renderVolumen(rows) {
+  const gran = document.getElementById('f-gran').value;
+  const agg = aggregate(rows, r => getPeriodKey(r.fecha, gran));
+  const tb = document.getElementById('tb-volumen');
+  if (!agg.length) { tb.innerHTML = emptyRow(15); return; }
+
+  // totals
+  const tot = {impr:0,clicks:0,creados:0,cal:0,asig:0,cita:0,cierres:0};
+  agg.forEach(a => { tot.impr+=a.impr; tot.clicks+=a.clicks; tot.creados+=a.creados; tot.cal+=a.cal; tot.asig+=a.asig; tot.cita+=a.cita; tot.cierres+=a.cierres; });
+
+  const rowHtml = a => `<tr>
+    ${td(a.key,'td-period')}
+    ${td(fmt.n(a.impr))}
+    ${td(fmt.n(a.clicks))}
+    ${td(fmt.n(a.creados),'td-leads')}
+    ${td(fmt.n(a.cal),'td-leads')}
+    ${td(fmt.n(a.asig),'td-leads')}
+    ${td(fmt.n(a.cita),'td-leads')}
+    ${td(fmt.n(a.cierres),'td-leads')}
+    ${td(fmt.ratio(a.asig, a.cierres))}
+    ${td(fmt.pct(fmt.safe(a.clicks, a.impr)),'td-rate')}
+    ${td(fmt.pct(fmt.safe(a.creados, a.clicks)),'td-rate')}
+    ${td(fmt.pct(fmt.safe(a.cal, a.creados)),'td-rate')}
+    ${td(fmt.pct(fmt.safe(a.asig, a.cal)),'td-rate')}
+    ${td(fmt.pct(fmt.safe(a.cita, a.asig)),'td-rate')}
+    ${td(fmt.pct(fmt.safe(a.cierres, a.creados)),'td-rate')}
+  </tr>`;
+
+  const totalRow = `<tr class="row-total">
+    ${td('TOTAL')}
+    ${td(fmt.n(tot.impr))}
+    ${td(fmt.n(tot.clicks))}
+    ${td(fmt.n(tot.creados))}
+    ${td(fmt.n(tot.cal))}
+    ${td(fmt.n(tot.asig))}
+    ${td(fmt.n(tot.cita))}
+    ${td(fmt.n(tot.cierres))}
+    ${td(fmt.ratio(tot.asig, tot.cierres))}
+    ${td(fmt.pct(fmt.safe(tot.clicks, tot.impr)))}
+    ${td(fmt.pct(fmt.safe(tot.creados, tot.clicks)))}
+    ${td(fmt.pct(fmt.safe(tot.cal, tot.creados)))}
+    ${td(fmt.pct(fmt.safe(tot.asig, tot.cal)))}
+    ${td(fmt.pct(fmt.safe(tot.cita, tot.asig)))}
+    ${td(fmt.pct(fmt.safe(tot.cierres, tot.creados)))}
+  </tr>`;
+
+  tb.innerHTML = agg.map(rowHtml).join('') + totalRow;
+}
+
+function renderCostos(rows) {
+  const gran = document.getElementById('f-gran').value;
+  const agg = aggregate(rows, r => getPeriodKey(r.fecha, gran));
+  const tb = document.getElementById('tb-costos');
+  if (!agg.length) { tb.innerHTML = emptyRow(9); return; }
+
+  const rowHtml = a => `<tr>
+    ${td(a.key,'td-period')}
+    ${td(fmt.mxn(a.inv),'td-money')}
+    ${td(fmt.costo(a.inv*1000, a.impr),'td-cost')}
+    ${td(fmt.costo(a.inv, a.clicks),'td-cost')}
+    ${td(fmt.costo(a.inv, a.creados),'td-cost')}
+    ${td(fmt.costo(a.inv, a.cal),'td-cost')}
+    ${td(fmt.costo(a.inv, a.asig),'td-cost')}
+    ${td(fmt.costo(a.inv, a.cita),'td-cost')}
+    ${td(fmt.costo(a.inv, a.cierres),'td-cost')}
+  </tr>`;
+
+  const tot = {inv:0,impr:0,clicks:0,creados:0,cal:0,asig:0,cita:0,cierres:0};
+  agg.forEach(a => { tot.inv+=a.inv; tot.impr+=a.impr; tot.clicks+=a.clicks; tot.creados+=a.creados; tot.cal+=a.cal; tot.asig+=a.asig; tot.cita+=a.cita; tot.cierres+=a.cierres; });
+
+  const totalRow = `<tr class="row-total">
+    ${td('TOTAL')}
+    ${td(fmt.mxn(tot.inv))}
+    ${td(fmt.costo(tot.inv*1000, tot.impr))}
+    ${td(fmt.costo(tot.inv, tot.clicks))}
+    ${td(fmt.costo(tot.inv, tot.creados))}
+    ${td(fmt.costo(tot.inv, tot.cal))}
+    ${td(fmt.costo(tot.inv, tot.asig))}
+    ${td(fmt.costo(tot.inv, tot.cita))}
+    ${td(fmt.costo(tot.inv, tot.cierres))}
+  </tr>`;
+
+  tb.innerHTML = agg.map(rowHtml).join('') + totalRow;
+}
+
+function renderFuente(rows) {
+  const agg = aggregate(rows, r => (r.canal||'—') + '||' + (r.sub_canal||'—'));
+  const tb = document.getElementById('tb-fuente');
+  if (!agg.length) { tb.innerHTML = emptyRow(12); return; }
+
+  agg.sort((a,b) => b.inv - a.inv);
+
+  const rowHtml = a => `<tr>
+    ${td(a.fuente,'td-source')}
+    ${td(a.sub,'td-sub')}
+    ${td(fmt.mxn(a.inv),'td-money')}
+    ${td(fmt.n(a.creados),'td-leads')}
+    ${td(fmt.n(a.cal),'td-leads')}
+    ${td(fmt.n(a.asig),'td-leads')}
+    ${td(fmt.n(a.cierres),'td-leads')}
+    ${td(fmt.costo(a.inv, a.creados),'td-cost')}
+    ${td(fmt.costo(a.inv, a.cal),'td-cost')}
+    ${td(fmt.costo(a.inv, a.cierres),'td-cost')}
+    ${td(fmt.pct(fmt.safe(a.cal, a.creados)),'td-rate')}
+    ${td(fmt.pct(fmt.safe(a.cierres, a.creados)),'td-rate')}
+  </tr>`;
+
+  tb.innerHTML = agg.map(rowHtml).join('');
+}
+
+function platBadge(p) {
+  const norm = (p||'').toLowerCase();
+  if (norm.includes('google'))   return `<span class="badge badge-google">Google</span>`;
+  if (norm.includes('facebook') || norm.includes('meta')) return `<span class="badge badge-facebook">Facebook</span>`;
+  if (norm.includes('bing'))     return `<span class="badge badge-bing">Bing</span>`;
+  return `<span class="badge badge-otros">${p||'—'}</span>`;
+}
+
+function renderGranular(rows) {
+  const agg = aggregate(rows, r => [r.canal,r.sub_canal,r.plataforma,r.campana].join('||'));
+  const tb = document.getElementById('tb-gran');
+  if (!agg.length) { tb.innerHTML = emptyRow(16); return; }
+
+  agg.sort((a,b) => b.inv - a.inv);
+
+  const rowHtml = a => `<tr>
+    ${td(a.fuente,'td-source')}
+    ${td(a.sub,'td-sub')}
+    <td>${platBadge(a.plat)}</td>
+    <td class="td-campaign" title="${a.camp}">${a.camp}</td>
+    ${td(fmt.mxn(a.inv),'td-money')}
+    ${td(fmt.n(a.impr))}
+    ${td(fmt.n(a.clicks))}
+    ${td(fmt.n(a.creados),'td-leads')}
+    ${td(fmt.n(a.cal),'td-leads')}
+    ${td(fmt.n(a.asig),'td-leads')}
+    ${td(fmt.n(a.cierres),'td-leads')}
+    ${td(fmt.pct(fmt.safe(a.clicks, a.impr)),'td-rate')}
+    ${td(fmt.costo(a.inv, a.clicks),'td-cost')}
+    ${td(fmt.costo(a.inv, a.creados),'td-cost')}
+    ${td(fmt.costo(a.inv, a.cal),'td-cost')}
+    ${td(fmt.costo(a.inv, a.cierres),'td-cost')}
+  </tr>`;
+
+  tb.innerHTML = agg.map(rowHtml).join('');
+}
+
+function emptyRow(cols) {
+  return `<tr><td colspan="${cols}" class="empty"><div class="empty-icon">📭</div><p>Sin datos para los filtros seleccionados</p></td></tr>`;
+}
+
+// ─── Filtros dinámicos ────────────────────────────────────────────────────────
+function populateCampanias() {
+  const plat  = document.getElementById('f-plat').value;
+  const fuente= document.getElementById('f-fuente').value;
+  const sel   = document.getElementById('f-camp');
+  const prev  = sel.value;
+  const camps = [...new Set(RAW_DATA
+    .filter(r => (!plat   || r.plataforma === plat))
+    .filter(r => (!fuente || r.canal === fuente))
+    .map(r => r.campana).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todas</option>' + camps.map(c => `<option value="${c}">${c}</option>`).join('');
+  if (camps.includes(prev)) sel.value = prev;
+}
+
+// ─── Apply filters ─────────────────────────────────────────────────────────────
+function applyFilters() {
+  populateCampanias();
+  const rows = getFiltered();
+  renderVolumen(rows);
+  renderCostos(rows);
+  renderFuente(rows);
+  renderGranular(rows);
+}
+
+// ─── Sort ─────────────────────────────────────────────────────────────────────
+function sortTable(tableId, colIdx) {
+  const table = document.getElementById(tableId);
+  const tbody = table.querySelector('tbody');
+  const rows  = Array.from(tbody.querySelectorAll('tr')).filter(r => !r.classList.contains('row-total'));
+  const totals= Array.from(tbody.querySelectorAll('tr.row-total'));
+  const key   = tableId + '_' + colIdx;
+  const asc   = sortState[key] !== true;
+  sortState[key] = asc;
+
+  // update header icons
+  table.querySelectorAll('thead th').forEach((th,i) => {
+    th.classList.remove('sorted-asc','sorted-desc');
+    if (i === colIdx) th.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
+  });
+
+  rows.sort((a,b) => {
+    const av = a.cells[colIdx]?.textContent.replace(/[$,%x]/g,'').trim();
+    const bv = b.cells[colIdx]?.textContent.replace(/[$,%x]/g,'').trim();
+    const an = parseFloat(av?.replace(/\./g,'').replace(',','.'));
+    const bn = parseFloat(bv?.replace(/\./g,'').replace(',','.'));
+    if (!isNaN(an) && !isNaN(bn)) return asc ? an-bn : bn-an;
+    return asc ? av?.localeCompare(bv||'') : bv?.localeCompare(av||'');
+  });
+
+  tbody.innerHTML = '';
+  rows.forEach(r => tbody.appendChild(r));
+  totals.forEach(r => tbody.appendChild(r));
+}
+
+// ─── Theme ─────────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.querySelector('.theme-btn').textContent = isDark ? '☀️' : '🌙';
+}
+
+// ─── Load data ─────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const res = await fetch('data.json?_=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    RAW_DATA = json.data || [];
+
+    const ts = json.generado_utc ? new Date(json.generado_utc).toLocaleString('es-MX', {timeZone:'America/Mexico_City', day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+    document.getElementById('last-update').textContent = `Actualizado: ${ts} MX · ${(RAW_DATA.length).toLocaleString()} registros`;
+    document.getElementById('last-update-header').textContent = `Actualizado ${ts} MX`;
+
+    populateCampanias();
+    applyFilters();
+  } catch(e) {
+    document.getElementById('last-update').textContent = 'Sin datos · configura build_data.py';
+    document.getElementById('no-data-banner').style.display = 'block';
+    ['tb-volumen','tb-costos','tb-fuente','tb-gran'].forEach((id, i) => {
+      const cols = [15,9,12,16][i];
+      document.getElementById(id).innerHTML = emptyRow(cols);
+    });
   }
-  render();
-}).catch(err => {
-  console.error(err);
-  document.querySelector('#volTable tbody').innerHTML = `<tr><td colspan="15" style="padding:24px;color:#f87171;text-align:center">No se encontró data.json</td></tr>`;
-});
+}
+
+document.addEventListener('DOMContentLoaded', loadData);
 </script>
 </body>
 </html>

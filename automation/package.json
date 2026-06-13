@@ -1,0 +1,14 @@
+{
+  "name": "tablero-mx-paid-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Refresh local del tablero MX Paid: Playwright sobre BQ Studio Web + commit a GitHub Pages.",
+  "scripts": {
+    "auth": "node refresh.js --auth",
+    "refresh": "node refresh.js",
+    "refresh:headed": "node refresh.js --headed"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}
