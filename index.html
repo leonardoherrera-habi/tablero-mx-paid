@@ -605,7 +605,13 @@ async function loadData() {
     const res = await fetch('data.json?_=' + Date.now());
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
-    RAW_DATA = json.data || [];
+    // BigQuery devuelve todos los valores como strings — convertir a número
+    const NUM_FIELDS = ['creados','calificados','asignados','cita_agendada','cierres','inversion','impressions','clicks'];
+    RAW_DATA = (json.data || []).map(r => {
+      const row = Object.assign({}, r);
+      NUM_FIELDS.forEach(k => { if (row[k] != null) row[k] = parseFloat(row[k]) || 0; });
+      return row;
+    });
 
     const ts = json.generado_utc ? new Date(json.generado_utc).toLocaleString('es-MX', {timeZone:'America/Mexico_City', day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
     document.getElementById('last-update').textContent = `Actualizado: ${ts} MX · ${(RAW_DATA.length).toLocaleString()} registros`;
