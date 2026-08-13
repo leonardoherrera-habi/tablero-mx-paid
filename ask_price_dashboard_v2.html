@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Price Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 30px; }
+        h1 { margin-bottom: 10px; color: #222; font-size: 28px; }
+        .subtitle { color: #666; margin-bottom: 25px; font-size: 14px; }
+        .status { padding: 12px; margin-bottom: 20px; border-radius: 4px; font-size: 13px; text-align: center; background: #e8f5e9; color: #2e7d32; }
+        .alert-box { background: #ffebee; border-left: 4px solid #f44336; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .alert-title { font-weight: 600; color: #c62828; margin-bottom: 8px; }
+        .alert-text { font-size: 12px; color: #666; line-height: 1.5; }
+        .filters { background: #f9f9f9; padding: 20px; border-radius: 6px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }
+        .filter-group { display: flex; flex-direction: column; gap: 6px; }
+        .filter-group label { font-weight: 600; font-size: 13px; color: #555; }
+        input, select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        .channel-filters { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
+        .channel-filters label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+        button { padding: 8px 16px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .card { padding: 20px; border-radius: 6px; border-left: 4px solid; background: white; }
+        .card.good { border-left-color: #4caf50; background: #f1f8e9; }
+        .card.warning { border-left-color: #ff9800; background: #fff3e0; }
+        .card.critical { border-left-color: #f44336; background: #ffebee; }
+        .card-label { font-size: 12px; color: #666; font-weight: 600; margin-bottom: 8px; }
+        .card-value { font-size: 28px; font-weight: 700; color: #222; }
+        .card-metric { font-size: 12px; color: #999; margin-top: 8px; }
+        .charts-section { display: flex; flex-direction: column; gap: 30px; margin-bottom: 30px; }
+        .chart-container { background: #fafafa; padding: 20px; border-radius: 6px; border: 1px solid #e0e0e0; }
+        .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #222; }
+        .chart-wrapper { position: relative; height: 350px; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+        .data-table th { background: #f5f5f5; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+        .data-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+        .data-table tr:hover { background: #fafafa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Ask Price Dashboard - MX Paid Media</h1>
+        <p class="subtitle">Benchmark de calidad: % leads sin precio solicitado por canal</p>
+        
+        <div id="status" class="status">Cargando datos...</div>
+        <div id="alertsContainer"></div>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label>Desde:</label>
+                <input type="date" id="dateFrom" onchange="refreshDash()">
+            </div>
+            <div class="filter-group">
+                <label>Hasta:</label>
+                <input type="date" id="dateTo" onchange="refreshDash()">
+            </div>
+            <div class="filter-group">
+                <label>Granularidad:</label>
+                <select id="granularity" onchange="refreshDash()">
+                    <option value="daily">Diario</option>
+                    <option value="weekly">Semanal</option>
+                    <option value="monthly">Mensual</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Fuente:</label>
+                <select id="sourceFilter" onchange="refreshDash()">
+                    <option value="">Todas</option>
+                    <option value="Web">Solo Web</option>
+                    <option value="LeadForm">Solo LeadForm</option>
+                </select>
+            </div>
+            
+            <div style="width: 100%;">
+                <label style="font-weight: 600; font-size: 13px; color: #555; display: block; margin-bottom: 10px;">Canales:</label>
+                <div class="channel-filters">
+                    <label><input type="checkbox" value="Meta" checked onchange="refreshDash()"> Meta</label>
+                    <label><input type="checkbox" value="Google Search" checked onchange="refreshDash()"> Google Search</label>
+                    <label><input type="checkbox" value="Google P Max" checked onchange="refreshDash()"> Google P Max</label>
+                    <label><input type="checkbox" value="Google Demand Gen" checked onchange="refreshDash()"> Google Demand Gen</label>
+                </div>
+            </div>
+        </div>
+        
+        <div id="summaryCards" class="summary-cards"></div>
+        
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-title">% de Leads SIN Ask Price por Día</div>
+                <div class="chart-wrapper"><canvas id="chart1"></canvas></div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">Share de Leads (Total)</div>
+                <div class="chart-wrapper"><canvas id="chart2"></canvas></div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">Share de Leads SIN Ask Price por Canal</div>
+                <div class="chart-wrapper"><canvas id="chart3"></canvas></div>
+            </div>
+        </div>
+        
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: #222;">Datos Detallados</h2>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Canal</th>
+                    <th>Fuente</th>
+                    <th>Total Leads</th>
+                    <th>Con Ask Price</th>
+                    <th>Sin Ask Price</th>
+                    <th>% Sin Ask Price</th>
+                </tr>
+            </thead>
+            <tbody id="dataTable"></tbody>
+        </table>
+    </div>
+    
+    <script>
+        let rawData = [];
+        let c1 = null, c2 = null, c3 = null;
+        
+        const channelColors = {
+            'Meta': '#1877f2',
+            'Google Search': '#4285f4',
+            'Google P Max': '#ea4335',
+            'Google Demand Gen': '#fbbc04'
+        };
+        
+        function parseCSV(csv) {
+            const rows = [];
+            let current = '';
+            let inside = false;
+            
+            for (let i = 0; i < csv.length; i++) {
+                const char = csv[i];
+                const nextChar = csv[i + 1];
+                
+                if (char === '"') {
+                    inside = !inside;
+                } else if (char === ',' && !inside) {
+                    rows.push(current);
+                    current = '';
+                } else if ((char === '\n' || char === '\r') && !inside) {
+                    if (current) rows.push(current);
+                    current = '';
+                    if (char === '\r' && nextChar === '\n') i++;
+                } else {
+                    current += char;
+                }
+            }
+            if (current) rows.push(current);
+            
+            return rows.map(v => v.replace(/^"|"$/g, '').replace(/,/g, '.'));
+        }
+        
+        const SHEET_ID = '1_lYIa34n-L4v2PNsEL3Vjx_5YLRQEJFWDRJ-6K-Fu1Y';
+        const SHEET_GID = '204886809';
+
+        // Trae el CSV con timeout para que NUNCA se quede colgado en silencio.
+        async function fetchCSV(url, timeoutMs) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, { signal: ctrl.signal, redirect: 'follow', cache: 'no-store' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const text = await res.text();
+                // Si Google devolvió una página de login/HTML en vez de CSV, lo detectamos.
+                if (/^\s*</.test(text)) throw new Error('respuesta no-CSV (posible hoja no pública o login)');
+                return text;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        async function loadData() {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = '⏳ Cargando datos...';
+
+            // gviz es el endpoint más amigable con CORS desde https; export es el respaldo.
+            const gviz = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+            const exportUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+
+            let csv = null, lastErr = null;
+            for (const url of [gviz, exportUrl]) {
+                try {
+                    csv = await fetchCSV(url, 20000);
+                    break;
+                } catch (e) {
+                    lastErr = e;
+                }
+            }
+
+            if (csv === null) {
+                statusEl.textContent = '❌ No se pudieron cargar los datos: ' +
+                    (lastErr ? lastErr.message : 'error desconocido') +
+                    '. Abre este tablero por su liga https (GitHub Pages), no como archivo local.';
+                return;
+            }
+
+            try {
+                const lines = csv.trim().split(/\r?\n/);
+                const headers = parseCSV(lines[0]).map(h => h.trim());
+
+                rawData = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const vals = parseCSV(lines[i]);
+                    const obj = {};
+                    headers.forEach((h, j) => obj[h] = (vals[j] !== undefined ? vals[j] : ''));
+                    if (obj.fecha) rawData.push(obj);
+                }
+
+                if (rawData.length === 0) {
+                    statusEl.textContent = '⚠️ Se cargó la hoja pero no trae registros con fecha. Revisa el gid o los encabezados.';
+                    return;
+                }
+
+                const today = new Date();
+                const ninetyDaysAgo = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+                // Solo fija fechas por defecto la primera vez, para no pisar lo que el usuario filtró.
+                if (!document.getElementById('dateTo').value) {
+                    document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+                }
+                if (!document.getElementById('dateFrom').value) {
+                    document.getElementById('dateFrom').value = ninetyDaysAgo.toISOString().split('T')[0];
+                }
+
+                const stamp = new Date().toLocaleString('es-MX', { hour12: false });
+                statusEl.textContent = `✅ ${rawData.length} registros · actualizado ${stamp}`;
+
+                refreshDash();
+            } catch (error) {
+                statusEl.textContent = '❌ Error procesando los datos: ' + error.message;
+            }
+        }
+        
+        function checkAlerts() {
+            const pmax = rawData.filter(r => r.canal === 'Google P Max').sort((a, b) => {
+                const [da, ma, ya] = a.fecha.split('/').map(Number);
+                const [db, mb, yb] = b.fecha.split('/').map(Number);
+                return new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da);
+            });
+            
+            let html = '';
+            if (pmax.length >= 2) {
+                const last = parseFloat(pmax[0].pct_without_price) || 0;
+                const prev = parseFloat(pmax[1].pct_without_price) || 0;
+                
+                if (prev <= 25 && last >= 70) {
+                    html = `
+                        <div class="alert-box">
+                            <div class="alert-title">⚠️ ALERTA: Google P Max</div>
+                            <div class="alert-text">
+                                <strong>Aumento drástico detectado</strong><br>
+                                ${pmax[1].fecha}: ${prev}% → ${pmax[0].fecha}: ${last}%<br>
+                                <strong>Acción:</strong> Revisar landing page o formulario de P Max
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            document.getElementById('alertsContainer').innerHTML = html;
+        }
+        
+        function refreshDash() {
+            const dateFrom = new Date(document.getElementById('dateFrom').value);
+            const dateTo = new Date(document.getElementById('dateTo').value);
+            const sourceFilter = document.getElementById('sourceFilter').value;
+            
+            const selectedChannels = Array.from(document.querySelectorAll('.channel-filters input:checked'))
+                .map(cb => cb.value);
+            
+            const filteredData = rawData.filter(row => {
+                const parts = row.fecha.split('/');
+                const fecha = new Date(parts[2], parts[1] - 1, parts[0]);
+                return fecha >= dateFrom && fecha <= dateTo &&
+                       (!sourceFilter || row.fuente === sourceFilter) &&
+                       selectedChannels.includes(row.canal);
+            });
+            
+            updateSummaryCards(filteredData);
+            updateCharts(filteredData);
+            updateTable(filteredData);
+            checkAlerts();
+        }
+        
+        function updateSummaryCards(data) {
+            const grouped = {};
+            data.forEach(row => {
+                if (!grouped[row.canal]) grouped[row.canal] = { total: 0, without: 0 };
+                grouped[row.canal].total += parseInt(row.total_leads) || 0;
+                grouped[row.canal].without += parseInt(row.leads_without_price) || 0;
+            });
+            
+            let html = Object.entries(grouped).map(([canal, dat]) => {
+                const pct = (100 * dat.without / dat.total).toFixed(2);
+                let cls = 'good';
+                if (pct > 30) cls = 'critical';
+                else if (pct > 15) cls = 'warning';
+                
+                return `<div class="card ${cls}"><div class="card-label">${canal}</div><div class="card-value">${pct}%</div><div class="card-metric">${dat.without} / ${dat.total}</div></div>`;
+            }).join('');
+            
+            document.getElementById('summaryCards').innerHTML = html;
+        }
+        
+        function updateCharts(data) {
+            const dailyData = {};
+            
+            data.forEach(row => {
+                const fecha = row.fecha;
+                const canal = row.canal;
+                const total = parseInt(row.total_leads) || 0;
+                const without = parseInt(row.leads_without_price) || 0;
+                
+                if (!dailyData[fecha]) dailyData[fecha] = {};
+                if (!dailyData[fecha][canal]) dailyData[fecha][canal] = { total: 0, without: 0 };
+                
+                dailyData[fecha][canal].total += total;
+                dailyData[fecha][canal].without += without;
+            });
+            
+            const dates = Object.keys(dailyData).sort((a, b) => {
+                const [da, ma, ya] = a.split('/').map(Number);
+                const [db, mb, yb] = b.split('/').map(Number);
+                return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
+            });
+            
+            const channels = [...new Set(data.map(r => r.canal))];
+            
+            const chart1Data = {};
+            channels.forEach(canal => {
+                chart1Data[canal] = dates.map(fecha => {
+                    const d = dailyData[fecha][canal];
+                    return d ? (100 * d.without / d.total).toFixed(2) : 0;
+                });
+            });
+            
+            if (c1) c1.destroy();
+            c1 = new Chart(document.getElementById('chart1'), {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: channels.map(canal => ({
+                        label: canal,
+                        data: chart1Data[canal],
+                        borderColor: channelColors[canal],
+                        backgroundColor: channelColors[canal] + '15',
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+            
+            if (c2) c2.destroy();
+            c2 = new Chart(document.getElementById('chart2'), {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: channels.map(canal => ({
+                        label: canal,
+                        data: dates.map(fecha => {
+                            const d = dailyData[fecha][canal];
+                            return d ? d.total : 0;
+                        }),
+                        borderColor: channelColors[canal],
+                        backgroundColor: channelColors[canal] + '80',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, stacked: true }, x: { stacked: true } }
+                }
+            });
+            
+            if (c3) c3.destroy();
+            c3 = new Chart(document.getElementById('chart3'), {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: channels.map(canal => ({
+                        label: canal,
+                        data: dates.map(fecha => {
+                            const d = dailyData[fecha][canal];
+                            return d ? d.without : 0;
+                        }),
+                        borderColor: channelColors[canal],
+                        backgroundColor: channelColors[canal] + '80',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, stacked: true }, x: { stacked: true } }
+                }
+            });
+        }
+        
+        function updateTable(data) {
+            const html = data.map(row => `
+                <tr>
+                    <td>${row.fecha}</td>
+                    <td>${row.canal}</td>
+                    <td>${row.fuente}</td>
+                    <td>${row.total_leads}</td>
+                    <td>${row.leads_with_price}</td>
+                    <td>${row.leads_without_price}</td>
+                    <td><strong>${row.pct_without_price}%</strong></td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('dataTable').innerHTML = html;
+        }
+        
+        loadData();
+        setInterval(loadData, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
