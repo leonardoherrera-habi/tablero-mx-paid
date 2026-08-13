@@ -178,66 +178,68 @@
             }
         }
 
+        // Parsea un CSV completo a arreglo de objetos usando la fila 0 como encabezados.
+        function parseSheet(csv) {
+            const lines = csv.trim().split(/\r?\n/);
+            const headers = parseCSV(lines[0]).map(h => h.trim().toLowerCase());
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const vals = parseCSV(lines[i]);
+                const obj = {};
+                headers.forEach((h, j) => obj[h] = (vals[j] !== undefined ? vals[j] : ''));
+                if (obj.fecha) rows.push(obj);
+            }
+            return { headers, rows };
+        }
+
         async function loadData() {
             const statusEl = document.getElementById('status');
             statusEl.textContent = '⏳ Cargando datos...';
 
-            // gviz es el endpoint más amigable con CORS desde https; export es el respaldo.
-            const gviz = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+            // export da los encabezados limpios (fecha,canal,...); gviz es respaldo.
             const exportUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+            const gviz = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
 
-            let csv = null, lastErr = null;
-            for (const url of [gviz, exportUrl]) {
+            let parsed = null, lastErr = null, lastHeaders = null;
+            for (const url of [exportUrl, gviz]) {
                 try {
-                    csv = await fetchCSV(url, 20000);
-                    break;
+                    const csv = await fetchCSV(url, 20000);
+                    const p = parseSheet(csv);
+                    lastHeaders = p.headers;
+                    if (p.rows.length > 0) { parsed = p; break; }  // solo aceptamos si trae filas con fecha
                 } catch (e) {
                     lastErr = e;
                 }
             }
 
-            if (csv === null) {
-                statusEl.textContent = '❌ No se pudieron cargar los datos: ' +
-                    (lastErr ? lastErr.message : 'error desconocido') +
-                    '. Abre este tablero por su liga https (GitHub Pages), no como archivo local.';
+            if (!parsed) {
+                if (lastHeaders) {
+                    statusEl.textContent = '⚠️ Se cargó la hoja pero sin filas con "fecha". Encabezados detectados: ['
+                        + lastHeaders.join(', ') + ']. Avísame estos encabezados para ajustar.';
+                } else {
+                    statusEl.textContent = '❌ No se pudieron cargar los datos: '
+                        + (lastErr ? lastErr.message : 'error desconocido')
+                        + '. Ábrelo por su liga https (GitHub Pages), no como archivo local.';
+                }
                 return;
             }
 
-            try {
-                const lines = csv.trim().split(/\r?\n/);
-                const headers = parseCSV(lines[0]).map(h => h.trim());
+            rawData = parsed.rows;
 
-                rawData = [];
-                for (let i = 1; i < lines.length; i++) {
-                    const vals = parseCSV(lines[i]);
-                    const obj = {};
-                    headers.forEach((h, j) => obj[h] = (vals[j] !== undefined ? vals[j] : ''));
-                    if (obj.fecha) rawData.push(obj);
-                }
-
-                if (rawData.length === 0) {
-                    statusEl.textContent = '⚠️ Se cargó la hoja pero no trae registros con fecha. Revisa el gid o los encabezados.';
-                    return;
-                }
-
-                const today = new Date();
-                const ninetyDaysAgo = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
-
-                // Solo fija fechas por defecto la primera vez, para no pisar lo que el usuario filtró.
-                if (!document.getElementById('dateTo').value) {
-                    document.getElementById('dateTo').value = today.toISOString().split('T')[0];
-                }
-                if (!document.getElementById('dateFrom').value) {
-                    document.getElementById('dateFrom').value = ninetyDaysAgo.toISOString().split('T')[0];
-                }
-
-                const stamp = new Date().toLocaleString('es-MX', { hour12: false });
-                statusEl.textContent = `✅ ${rawData.length} registros · actualizado ${stamp}`;
-
-                refreshDash();
-            } catch (error) {
-                statusEl.textContent = '❌ Error procesando los datos: ' + error.message;
+            const today = new Date();
+            const ninetyDaysAgo = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+            // Solo fija fechas por defecto la primera vez, para no pisar lo que el usuario filtró.
+            if (!document.getElementById('dateTo').value) {
+                document.getElementById('dateTo').value = today.toISOString().split('T')[0];
             }
+            if (!document.getElementById('dateFrom').value) {
+                document.getElementById('dateFrom').value = ninetyDaysAgo.toISOString().split('T')[0];
+            }
+
+            const stamp = new Date().toLocaleString('es-MX', { hour12: false });
+            statusEl.textContent = `✅ ${rawData.length} registros · actualizado ${stamp}`;
+            refreshDash();
         }
         
         function checkAlerts() {
