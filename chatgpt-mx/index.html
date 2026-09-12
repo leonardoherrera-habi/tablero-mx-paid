@@ -333,10 +333,13 @@
 
   function merge(gasto, leads) {
     var by = {};
-    var touch = function (f) { if (!by[f]) by[f] = { fecha: f, spend: 0, clicks: 0, impr: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 }; return by[f]; };
+    var touch = function (f) { if (!by[f]) by[f] = { fecha: f, spend: 0, clicks: 0, impr: 0, conv: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 }; return by[f]; };
     gasto.forEach(function (r) {
       var o = touch(r.fecha);
       o.spend += n(r.spend_mxn); o.clicks += n(r.clicks); o.impr += n(r.impressions);
+      // Lo que la plataforma dice haber convertido. Es referencia, no verdad:
+      // la cifra buena es `reg`, que sale de BigQuery.
+      o.conv += n(r.conversiones_plataforma);
     });
     leads.forEach(function (r) {
       var o = touch(r.fecha);
@@ -367,7 +370,7 @@
 
   // ---- render --------------------------------------------------------
   function totals(rows) {
-    var t = { spend: 0, clicks: 0, impr: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 };
+    var t = { spend: 0, clicks: 0, impr: 0, conv: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 };
     rows.forEach(function (r) {
       for (var k in t) t[k] += r[k];
     });
@@ -382,7 +385,8 @@
       ['Clics',       num(t.clicks),null],
       ['CTR',         t.impr ? pct(t.clicks / t.impr * 100) : '—', null],
       ['CPC',         cpc == null ? '—' : mxn2(cpc), null],
-      ['Registros',   num(t.reg),   null],
+      ['Registros',   num(t.reg),   'BigQuery · la cifra buena'],
+      ['Conv. plataforma', num(t.conv), 'lo que reporta el anuncio'],
       ['Calificados', num(t.cal),   null],
       ['Asignados',   num(t.asg),   null],
       ['Citas',       num(t.cit),   null],
