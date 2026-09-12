@@ -1,0 +1,4 @@
+# scratch de consultas ad-hoc
+.bqtmp/
+.q_*.sql
+.ddl_*.sql

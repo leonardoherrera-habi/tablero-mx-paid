@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChatGPT Ads MX</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0:      #f4f3f0;
+    --surface-1:      #fcfcfb;
+    --line:           #e2e1dc;
+    --line-strong:    #cfcec8;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #77766f;
+    --series-spend:   #2a78d6;
+    --series-reg:     #eb6834;
+    --series-cal:     #1baf7a;
+    --warn-bg:        #fdf4e3;
+    --warn-line:      #edc87a;
+    --warn-ink:       #6b4c07;
+    --bad-bg:         #fdeceb;
+    --bad-line:       #f0a9a7;
+    --bad-ink:        #8c1f1d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-0:      #121211;
+      --surface-1:      #1a1a19;
+      --line:           #2e2e2b;
+      --line-strong:    #444440;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #94938a;
+      --series-spend:   #3987e5;
+      --series-reg:     #d95926;
+      --series-cal:     #199e70;
+      --warn-bg:        #2a2410;
+      --warn-line:      #6b5a20;
+      --warn-ink:       #e8cf92;
+      --bad-bg:         #2c1514;
+      --bad-line:       #6d2d2b;
+      --bad-ink:        #f0a9a7;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0:      #121211;
+    --surface-1:      #1a1a19;
+    --line:           #2e2e2b;
+    --line-strong:    #444440;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #94938a;
+    --series-spend:   #3987e5;
+    --series-reg:     #d95926;
+    --series-cal:     #199e70;
+    --warn-bg:        #2a2410;
+    --warn-line:      #6b5a20;
+    --warn-ink:       #e8cf92;
+    --bad-bg:         #2c1514;
+    --bad-line:       #6d2d2b;
+    --bad-ink:        #f0a9a7;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--surface-0);
+    color: var(--text-primary);
+    font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 64px; }
+
+  header { margin-bottom: 22px; }
+  h1 { margin: 0 0 4px; font-size: 22px; font-weight: 640; letter-spacing: -0.01em; }
+  .sub { color: var(--text-secondary); font-size: 13px; }
+  .freshness { margin-top: 10px; font-size: 12px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 14px; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: baseline; }
+  .dot.ok  { background: var(--series-cal); }
+  .dot.bad { background: #e34948; }
+
+  /* filtros: una sola fila, arriba de todo lo que gobiernan */
+  .filters {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 12px; margin-bottom: 20px;
+    background: var(--surface-1); border: 1px solid var(--line); border-radius: 10px;
+  }
+  .filters .lbl { font-size: 12px; color: var(--text-muted); margin-right: 4px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  button.range {
+    font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer;
+    background: transparent; color: var(--text-secondary);
+    border: 1px solid var(--line-strong); border-radius: 7px;
+    transition: background .12s, color .12s;
+  }
+  button.range:hover { background: var(--surface-0); color: var(--text-primary); }
+  button.range[aria-pressed="true"] {
+    background: var(--text-primary); color: var(--surface-1); border-color: var(--text-primary);
+  }
+  .custom { display: none; align-items: center; gap: 6px; padding-left: 10px; margin-left: 4px; border-left: 1px solid var(--line); }
+  .custom.on { display: flex; }
+  .custom input {
+    font: inherit; font-size: 13px; padding: 5px 8px; color: var(--text-primary);
+    background: var(--surface-0); border: 1px solid var(--line-strong); border-radius: 6px;
+  }
+  .custom span { font-size: 12px; color: var(--text-muted); }
+
+  .banner { padding: 10px 14px; border-radius: 9px; font-size: 13px; margin-bottom: 16px; border: 1px solid; }
+  .banner.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+  .banner.bad  { background: var(--bad-bg);  border-color: var(--bad-line);  color: var(--bad-ink); }
+  .banner[hidden] { display: none; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; }
+  .tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 5px; }
+  .tile .v { font-size: 21px; font-weight: 640; font-variant-numeric: tabular-nums; letter-spacing: -0.015em; }
+  .tile .v.dim { color: var(--text-muted); font-weight: 500; }
+  .tile .n { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .card { background: var(--surface-1); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .card h2 { margin: 0 0 2px; font-size: 14px; font-weight: 620; }
+  .card .cap { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
+  .chart { width: 100%; overflow-x: auto; }
+  svg { display: block; }
+  .gridline { stroke: var(--line); stroke-width: 1; }
+  .axis { fill: var(--text-muted); font-size: 10px; }
+  .bar { transition: opacity .12s; }
+  .bar:hover { opacity: .78; }
+  .empty { padding: 28px 0; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+  .tblwrap { overflow-x: auto; background: var(--surface-1); border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 9px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); font-weight: 600; background: var(--surface-0); position: sticky; top: 0; }
+  th:first-child, td:first-child { text-align: left; }
+  td { font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: none; }
+  tfoot td { font-weight: 640; background: var(--surface-0); border-top: 1px solid var(--line-strong); }
+  .zero { color: var(--text-muted); }
+
+  footer { margin-top: 26px; font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+  footer b { color: var(--text-secondary); font-weight: 600; }
+  .tip {
+    position: fixed; pointer-events: none; z-index: 9; opacity: 0;
+    background: var(--text-primary); color: var(--surface-1);
+    padding: 7px 10px; border-radius: 7px; font-size: 12px; line-height: 1.45;
+    transition: opacity .1s; font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>ChatGPT Ads · México</h1>
+    <div class="sub">Campaña <b>Tuhabi_Chatgpt_Conversiones_MX_Nacional</b> · inversión en pesos mexicanos</div>
+    <div class="freshness" id="freshness"></div>
+  </header>
+
+  <div class="filters">
+    <span class="lbl">Periodo</span>
+    <div class="seg" id="ranges">
+      <button class="range" data-r="hoy">Hoy</button>
+      <button class="range" data-r="ayer">Ayer</button>
+      <button class="range" data-r="7d">Últimos 7 días</button>
+      <button class="range" data-r="30d">Últimos 30 días</button>
+      <button class="range" data-r="mes" aria-pressed="true">Este mes</button>
+      <button class="range" data-r="total">Total</button>
+      <button class="range" data-r="custom">Personalizado</button>
+    </div>
+    <div class="custom" id="custom">
+      <input type="date" id="from"><span>a</span><input type="date" id="to">
+    </div>
+  </div>
+
+  <div class="banner bad"  id="err"  hidden></div>
+  <div class="banner warn" id="warn" hidden></div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="cards">
+    <div class="card">
+      <h2>Inversión diaria</h2>
+      <div class="cap">Pesos mexicanos, según el reporte de la plataforma</div>
+      <div class="chart" id="chartSpend"></div>
+    </div>
+    <div class="card">
+      <h2>Registros y calificados</h2>
+      <div class="cap">Leads atribuidos a la campaña en el warehouse</div>
+      <div class="legend">
+        <span><i style="background:var(--series-reg)"></i>Registros</span>
+        <span><i style="background:var(--series-cal)"></i>Calificados</span>
+      </div>
+      <div class="chart" id="chartLeads"></div>
+    </div>
+  </div>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr>
+        <th>Día</th><th>Inversión</th><th>Impr.</th><th>Clics</th><th>CTR</th><th>CPC</th>
+        <th>Registros</th><th>Calif.</th><th>Asign.</th><th>Citas</th><th>Cierres</th><th>CPL</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+      <tfoot id="tfoot"></tfoot>
+    </table>
+  </div>
+
+  <footer>
+    <b>Los cierres van a ser cero durante los primeros meses y eso no significa nada.</b>
+    El ciclo de calificación a cierre en México es de 49 días de mediana y 130 en el percentil 90.<br>
+    El registro del 8 de septiembre fue una prueba manual, no tráfico del anuncio.
+    La campaña empezó a entregar el 9.<br>
+    Inversión y clics salen del reporte de la plataforma; el funnel sale de BigQuery. Son dos
+    fuentes distintas y pueden desfasarse — la marca de actualización de cada una está arriba.
+  </footer>
+
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // Fuentes. Las dos son hojas de Google publicadas como "cualquiera con el enlace".
+  // gid en null = primera pestaña. Una hoja convertida desde CSV NO tiene gid 0:
+  // pedirle gid=0 devuelve HTTP 400, que es fácil de confundir con "no es pública".
+  var SRC = {
+    gasto: { id: '1n9XuIEhc44nKhLKFC9maPE7qDLTDSP_tMFa0yXq_ICg', gid: null, label: 'Inversión' },
+    leads: { id: '1h0R45qldunhQRDzZu9WI59Q1Mrr8UEHOafMb4MRk9qU', gid: null, label: 'Funnel'   }
+  };
+  var REFRESH_MS = 5 * 60 * 1000;
+
+  var state = { range: 'mes', from: null, to: null, rows: [], meta: {} };
+
+  // ---- utilidades ----------------------------------------------------
+  var mxn = function (n) {
+    return n == null ? '—' : '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+  var mxn2 = function (n) {
+    return n == null ? '—' : '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+  var num = function (n) { return n == null ? '—' : n.toLocaleString('es-MX'); };
+  var pct = function (n) { return n == null ? '—' : n.toFixed(2).replace('.', ',') + '%'; };
+  var div = function (a, b) { return (b && isFinite(a / b)) ? a / b : null; };
+  var iso = function (d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  var hoyMX = function () {
+    // El corte del negocio es hora de México, no la del navegador.
+    var s = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+    return s; // en-CA da YYYY-MM-DD
+  };
+  var addDays = function (isoStr, n) {
+    var p = isoStr.split('-');
+    var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  var esc = function (s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  };
+
+  // ---- carga ---------------------------------------------------------
+  // Una hoja que no es pública devuelve el HTML del login, no un error HTTP.
+  // Por eso se revisa el contenido, no sólo el status.
+  function fetchCSV(url, ms) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, ms);
+    return fetch(url, { signal: ctrl.signal, redirect: 'follow', cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.text();
+      })
+      .then(function (text) {
+        if (/^\s*</.test(text)) throw new Error('la hoja no es pública (llegó HTML, no CSV)');
+        return text;
+      })
+      .finally(function () { clearTimeout(timer); });
+  }
+
+  function loadSheet(src) {
+    var base = 'https://docs.google.com/spreadsheets/d/' + src.id;
+    var g = src.gid ? '&gid=' + src.gid : '';
+    var urls = [
+      base + '/export?format=csv' + g,
+      base + '/gviz/tq?tqx=out:csv' + g
+    ];
+    var attempt = function (i, lastErr) {
+      if (i >= urls.length) return Promise.reject(lastErr || new Error('sin respuesta'));
+      return fetchCSV(urls[i], 20000).catch(function (e) { return attempt(i + 1, e); });
+    };
+    return attempt(0, null).then(parseCSV);
+  }
+
+  function parseCSV(text) {
+    var lines = text.trim().split(/\r?\n/);
+    if (!lines.length) return [];
+    var head = splitLine(lines[0]).map(function (h) { return h.trim().toLowerCase(); });
+    var out = [];
+    for (var i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      var cells = splitLine(lines[i]);
+      var o = {};
+      for (var j = 0; j < head.length; j++) o[head[j]] = (cells[j] || '').trim();
+      if (o.fecha) out.push(o);
+    }
+    return out;
+  }
+
+  function splitLine(line) {
+    var out = [], cur = '', q = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (ch === '"') { if (q && line[i + 1] === '"') { cur += '"'; i++; } else q = !q; }
+      else if (ch === ',' && !q) { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+
+  var n = function (v) { var x = parseFloat(String(v || '').replace(/[, ]/g, '')); return isFinite(x) ? x : 0; };
+
+  function merge(gasto, leads) {
+    var by = {};
+    var touch = function (f) { if (!by[f]) by[f] = { fecha: f, spend: 0, clicks: 0, impr: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 }; return by[f]; };
+    gasto.forEach(function (r) {
+      var o = touch(r.fecha);
+      o.spend += n(r.spend_mxn); o.clicks += n(r.clicks); o.impr += n(r.impressions);
+    });
+    leads.forEach(function (r) {
+      var o = touch(r.fecha);
+      o.reg += n(r.registros); o.cal += n(r.calificados);
+      o.asg += n(r.asignados);  o.cit += n(r.citas); o.cie += n(r.cierres);
+    });
+    return Object.keys(by).sort().map(function (k) { return by[k]; });
+  }
+
+  // ---- rango ---------------------------------------------------------
+  function bounds() {
+    var hoy = hoyMX();
+    switch (state.range) {
+      case 'hoy':   return [hoy, hoy];
+      case 'ayer':  return [addDays(hoy, -1), addDays(hoy, -1)];
+      case '7d':    return [addDays(hoy, -6), hoy];
+      case '30d':   return [addDays(hoy, -29), hoy];
+      case 'mes':   return [hoy.slice(0, 8) + '01', hoy];
+      case 'custom':return [state.from || '0000-01-01', state.to || '9999-12-31'];
+      default:      return ['0000-01-01', '9999-12-31'];
+    }
+  }
+
+  function slice() {
+    var b = bounds();
+    return state.rows.filter(function (r) { return r.fecha >= b[0] && r.fecha <= b[1]; });
+  }
+
+  // ---- render --------------------------------------------------------
+  function totals(rows) {
+    var t = { spend: 0, clicks: 0, impr: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 };
+    rows.forEach(function (r) {
+      for (var k in t) t[k] += r[k];
+    });
+    return t;
+  }
+
+  function renderTiles(t) {
+    var cpl = div(t.spend, t.reg), cpc = div(t.spend, t.clicks);
+    var items = [
+      ['Inversión',   mxn(t.spend), null],
+      ['Impresiones', num(t.impr),  null],
+      ['Clics',       num(t.clicks),null],
+      ['CTR',         t.impr ? pct(t.clicks / t.impr * 100) : '—', null],
+      ['CPC',         cpc == null ? '—' : mxn2(cpc), null],
+      ['Registros',   num(t.reg),   null],
+      ['Calificados', num(t.cal),   null],
+      ['Asignados',   num(t.asg),   null],
+      ['Citas',       num(t.cit),   null],
+      ['Cierres',     num(t.cie),   'ciclo de 49 días'],
+      ['CPL',         cpl == null ? '—' : mxn(cpl), t.reg ? null : 'sin registros'],
+      ['CVR calif.',  t.reg ? pct(t.cal / t.reg * 100) : '—', null]
+    ];
+    document.getElementById('tiles').innerHTML = items.map(function (it) {
+      var dim = (it[1] === '—' || it[1] === '0') ? ' dim' : '';
+      return '<div class="tile"><div class="k">' + esc(it[0]) + '</div>' +
+             '<div class="v' + dim + '">' + esc(it[1]) + '</div>' +
+             (it[2] ? '<div class="n">' + esc(it[2]) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+
+  // Barras: extremo redondeado 4px anclado a la base, 2px de aire entre barras.
+  function barChart(el, rows, series, fmt) {
+    if (!rows.length) { el.innerHTML = '<div class="empty">Sin datos en este periodo</div>'; return; }
+    var W = Math.max(el.clientWidth || 420, rows.length * 34 + 48);
+    var H = 190, padL = 44, padR = 8, padT = 12, padB = 26;
+    var iw = W - padL - padR, ih = H - padT - padB;
+    var max = 0;
+    rows.forEach(function (r) { series.forEach(function (s) { if (r[s.key] > max) max = r[s.key]; }); });
+    if (max <= 0) max = 1;
+    var step = iw / rows.length;
+    var gw = Math.min(step - 6, 30);
+    var bw = Math.max((gw - (series.length - 1) * 2) / series.length, 3);
+
+    var svg = ['<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img">'];
+    for (var g = 0; g <= 3; g++) {
+      var y = padT + ih - (ih * g / 3);
+      svg.push('<line class="gridline" x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '"/>');
+      svg.push('<text class="axis" x="' + (padL - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + esc(fmt(max * g / 3)) + '</text>');
+    }
+    rows.forEach(function (r, i) {
+      var x0 = padL + i * step + (step - gw) / 2;
+      series.forEach(function (s, si) {
+        var v = r[s.key];
+        var h = Math.max(v / max * ih, v > 0 ? 2 : 0);
+        if (h <= 0) return;
+        var x = x0 + si * (bw + 2), y = padT + ih - h;
+        svg.push('<rect class="bar" x="' + x + '" y="' + y + '" width="' + bw + '" height="' + h +
+                 '" rx="4" fill="' + s.color + '" data-t="' + esc(r.fecha + ' · ' + s.label + ': ' + fmt(v)) + '"/>');
+      });
+      if (rows.length <= 20 || i % Math.ceil(rows.length / 12) === 0) {
+        svg.push('<text class="axis" x="' + (x0 + gw / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' +
+                 esc(r.fecha.slice(8) + '/' + r.fecha.slice(5, 7)) + '</text>');
+      }
+    });
+    svg.push('</svg>');
+    el.innerHTML = svg.join('');
+  }
+
+  function renderTable(rows, t) {
+    var z = function (v) { return v ? num(v) : '<span class="zero">0</span>'; };
+    document.getElementById('tbody').innerHTML = rows.map(function (r) {
+      var cpl = div(r.spend, r.reg);
+      return '<tr><td>' + esc(r.fecha) + '</td>' +
+        '<td>' + mxn2(r.spend) + '</td>' +
+        '<td>' + z(r.impr) + '</td><td>' + z(r.clicks) + '</td>' +
+        '<td>' + (r.impr ? pct(r.clicks / r.impr * 100) : '—') + '</td>' +
+        '<td>' + (div(r.spend, r.clicks) == null ? '—' : mxn2(div(r.spend, r.clicks))) + '</td>' +
+        '<td>' + z(r.reg) + '</td><td>' + z(r.cal) + '</td><td>' + z(r.asg) + '</td>' +
+        '<td>' + z(r.cit) + '</td><td>' + z(r.cie) + '</td>' +
+        '<td>' + (cpl == null ? '—' : mxn(cpl)) + '</td></tr>';
+    }).join('') || '<tr><td colspan="12" class="empty">Sin datos en este periodo</td></tr>';
+
+    document.getElementById('tfoot').innerHTML = rows.length ? '<tr><td>Total</td>' +
+      '<td>' + mxn2(t.spend) + '</td><td>' + num(t.impr) + '</td><td>' + num(t.clicks) + '</td>' +
+      '<td>' + (t.impr ? pct(t.clicks / t.impr * 100) : '—') + '</td>' +
+      '<td>' + (div(t.spend, t.clicks) == null ? '—' : mxn2(div(t.spend, t.clicks))) + '</td>' +
+      '<td>' + num(t.reg) + '</td><td>' + num(t.cal) + '</td><td>' + num(t.asg) + '</td>' +
+      '<td>' + num(t.cit) + '</td><td>' + num(t.cie) + '</td>' +
+      '<td>' + (div(t.spend, t.reg) == null ? '—' : mxn(div(t.spend, t.reg))) + '</td></tr>' : '';
+  }
+
+  function render() {
+    var rows = slice(), t = totals(rows);
+    renderTiles(t);
+    barChart(document.getElementById('chartSpend'), rows,
+      [{ key: 'spend', label: 'Inversión', color: 'var(--series-spend)' }],
+      function (v) { return mxn(v); });
+    barChart(document.getElementById('chartLeads'), rows,
+      [{ key: 'reg', label: 'Registros', color: 'var(--series-reg)' },
+       { key: 'cal', label: 'Calificados', color: 'var(--series-cal)' }],
+      function (v) { return String(Math.round(v)); });
+    renderTable(rows, t);
+
+    // Gasto corriendo sin un solo registro es la señal que este tablero existe para dar.
+    var w = document.getElementById('warn');
+    if (t.spend > 0 && t.reg === 0) {
+      w.textContent = 'Hay ' + mxn(t.spend) + ' de inversión en este periodo y cero registros atribuidos. ' +
+        'Con ' + num(t.clicks) + ' clics, a la tasa de conversión de Facebook esperarías ' +
+        (t.clicks * 0.0141).toFixed(1).replace('.', ',') + ' registros.';
+      w.hidden = false;
+    } else { w.hidden = true; }
+  }
+
+  function renderFreshness() {
+    var el = document.getElementById('freshness'), out = [];
+    Object.keys(SRC).forEach(function (k) {
+      var m = state.meta[k] || {};
+      out.push('<span><span class="dot ' + (m.ok ? 'ok' : 'bad') + '"></span>' +
+        esc(SRC[k].label) + ': ' + (m.ok ? 'hasta ' + esc(m.last || '—') : 'no cargó') + '</span>');
+    });
+    out.push('<span>Actualizado ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) + '</span>');
+    el.innerHTML = out.join('');
+  }
+
+  function load() {
+    var errs = [];
+    return Promise.all([
+      loadSheet(SRC.gasto).catch(function (e) { errs.push('Inversión: ' + e.message); return null; }),
+      loadSheet(SRC.leads).catch(function (e) { errs.push('Funnel: ' + e.message); return null; })
+    ]).then(function (res) {
+      var gasto = res[0] || [], leads = res[1] || [];
+      state.meta.gasto = { ok: !!res[0], last: gasto.length ? gasto[gasto.length - 1].fecha : null };
+      state.meta.leads = { ok: !!res[1], last: leads.length ? leads[leads.length - 1].fecha : null };
+      // Un fallo parcial no borra lo que ya se mostraba.
+      if (res[0] || res[1]) state.rows = merge(gasto, leads);
+      var err = document.getElementById('err');
+      if (errs.length) { err.textContent = 'No se pudo cargar: ' + errs.join(' · '); err.hidden = false; }
+      else err.hidden = true;
+      renderFreshness();
+      render();
+    });
+  }
+
+  // ---- eventos -------------------------------------------------------
+  document.getElementById('ranges').addEventListener('click', function (e) {
+    var b = e.target.closest('button.range');
+    if (!b) return;
+    state.range = b.dataset.r;
+    [].forEach.call(this.querySelectorAll('button.range'), function (x) {
+      x.setAttribute('aria-pressed', String(x === b));
+    });
+    document.getElementById('custom').classList.toggle('on', state.range === 'custom');
+    try { localStorage.setItem('chatgpt_range', state.range); } catch (_) {}
+    render();
+  });
+
+  ['from', 'to'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', function () {
+      state.from = document.getElementById('from').value || null;
+      state.to   = document.getElementById('to').value   || null;
+      if (state.range === 'custom') render();
+    });
+  });
+
+  window.addEventListener('resize', function () { clearTimeout(window.__rz); window.__rz = setTimeout(render, 150); });
+
+  var tip = document.getElementById('tip');
+  document.addEventListener('mouseover', function (e) {
+    var t = e.target.getAttribute && e.target.getAttribute('data-t');
+    if (!t) return;
+    tip.textContent = t; tip.style.opacity = '1';
+  });
+  document.addEventListener('mousemove', function (e) {
+    if (tip.style.opacity !== '1') return;
+    tip.style.left = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 10) + 'px';
+    tip.style.top  = (e.clientY - tip.offsetHeight - 10) + 'px';
+  });
+  document.addEventListener('mouseout', function (e) {
+    if (e.target.getAttribute && e.target.getAttribute('data-t')) tip.style.opacity = '0';
+  });
+
+  // ---- arranque ------------------------------------------------------
+  try {
+    var saved = localStorage.getItem('chatgpt_range');
+    if (saved) {
+      var btn = document.querySelector('button.range[data-r="' + saved + '"]');
+      if (btn) {
+        state.range = saved;
+        [].forEach.call(document.querySelectorAll('button.range'), function (x) {
+          x.setAttribute('aria-pressed', String(x === btn));
+        });
+        document.getElementById('custom').classList.toggle('on', saved === 'custom');
+      }
+    }
+  } catch (_) {}
+
+  var hoy = hoyMX();
+  document.getElementById('to').value = hoy;
+  document.getElementById('from').value = hoy.slice(0, 8) + '01';
+  state.from = document.getElementById('from').value;
+  state.to = hoy;
+
+  load();
+  setInterval(load, REFRESH_MS);
+})();
+</script>
+</body>
+</html>
