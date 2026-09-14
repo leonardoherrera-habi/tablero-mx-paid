@@ -63,7 +63,7 @@ function actualizarGasto() {
 
   var porDia = {};
   filas.forEach(function (f) {
-    var nombre = f.campaign_name || '';
+    var nombre = leer_(f, 'campaign.name') || f.campaign_name || '';
     // La key esta amarrada a una cuenta, pero si algun dia hay mas campañas
     // en esa cuenta no queremos sumarlas aqui.
     if (CAMPANA && nombre && nombre !== CAMPANA) return;
@@ -71,10 +71,11 @@ function actualizarGasto() {
     var dia = fechaDe_(f);
     if (!dia) return;
     if (!porDia[dia]) porDia[dia] = { spend: 0, clicks: 0, impressions: 0, conv: 0 };
-    porDia[dia].spend      += Number(f.spend || 0);
-    porDia[dia].clicks     += Number(f.clicks || 0);
-    porDia[dia].impressions += Number(f.impressions || 0);
-    porDia[dia].conv       += Number(f.conversions || f.click_through_conversions || 0);
+    porDia[dia].spend       += Number(leer_(f, 'campaign.spend')       || 0);
+    porDia[dia].clicks      += Number(leer_(f, 'campaign.clicks')      || 0);
+    porDia[dia].impressions += Number(leer_(f, 'campaign.impressions') || 0);
+    // Las conversiones no salen de este endpoint; viven en POST /conversions/insights.
+    porDia[dia].conv        += 0;
   });
 
   var dias = Object.keys(porDia).sort();
@@ -118,8 +119,12 @@ function traerInsights_() {
     'time_ranges[]=' + encodeURIComponent(rango),
     'limit=2000'
   ];
-  ['campaign_id', 'campaign_name', 'readable_time', 'start_time',
-   'impressions', 'clicks', 'spend'].forEach(function (f) {
+  // Nombres canonicos. La API los devolvio en el error 400 cuando mandamos
+  // los cortos. OJO: campaign.start_time es el inicio de la CAMPAÑA, no el dia
+  // del dato — usarlo pondria todas las filas en la misma fecha. El dia esta
+  // en metadata.readable_time.
+  ['campaign.id', 'campaign.name', 'metadata.readable_time',
+   'campaign.impressions', 'campaign.clicks', 'campaign.spend'].forEach(function (f) {
     params.push('fields[]=' + encodeURIComponent(f));
   });
 
@@ -154,11 +159,34 @@ function traerInsights_() {
 
 
 /**
- * La documentacion no fija el formato de `readable_time`, asi que probamos
- * en orden y nos quedamos con lo primero que de una fecha valida.
+ * La API pide los campos con punto ("campaign.spend") pero los DEVUELVE cortos
+ * y planos ("spend"). Verificado el 14-sep-2026 con una respuesta real. Se
+ * prueban las tres formas por si cambia: puntos, anidado, y nombre corto.
+ */
+function leer_(fila, ruta) {
+  if (fila[ruta] !== undefined) return fila[ruta];
+
+  var partes = ruta.split('.'), v = fila, ok = true;
+  for (var i = 0; i < partes.length; i++) {
+    if (v == null || typeof v !== 'object') { ok = false; break; }
+    v = v[partes[i]];
+  }
+  if (ok && v !== undefined) return v;
+
+  // Asi responde hoy: las metricas como ultimo segmento plano ("spend"), y los
+  // identificadores con guion bajo ("campaign_name"). Probamos las dos.
+  var corto = fila[partes[partes.length - 1]];
+  if (corto !== undefined) return corto;
+  return fila[partes.join('_')];
+}
+
+
+/**
+ * El dia del dato sale de metadata.readable_time. La documentacion no fija su
+ * formato, asi que probamos varias formas y nos quedamos con la primera valida.
  */
 function fechaDe_(f) {
-  var candidatos = [f.start_time, f.readable_time, f.date, f.day];
+  var candidatos = [leer_(f, 'metadata.readable_time'), f.readable_time, f.date, f.day];
   for (var i = 0; i < candidatos.length; i++) {
     var v = candidatos[i];
     if (!v) continue;

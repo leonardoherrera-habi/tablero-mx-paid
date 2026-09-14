@@ -329,7 +329,23 @@
     return out;
   }
 
-  var n = function (v) { var x = parseFloat(String(v || '').replace(/[, ]/g, '')); return isFinite(x) ? x : 0; };
+  // La hoja exporta con la configuracion regional de Mexico: la coma es el
+  // separador DECIMAL ("1293,71"). Quitarla sin mas multiplicaba el gasto por
+  // cien y el numero seguia viendose plausible. Regla: gana el ultimo separador.
+  var n = function (v) {
+    var s = String(v == null ? '' : v).trim();
+    if (!s) return 0;
+    var pt = s.lastIndexOf('.'), cm = s.lastIndexOf(',');
+    if (pt > -1 && cm > -1) {
+      s = cm > pt ? s.replace(/\./g, '').replace(',', '.')   // 1.293,71
+                  : s.replace(/,/g, '');                      // 1,293.71
+    } else if (cm > -1) {
+      // Solo coma. Tres digitos a la derecha = miles; si no, decimal.
+      s = (s.length - cm - 1) === 3 ? s.replace(/,/g, '') : s.replace(',', '.');
+    }
+    var x = parseFloat(s.replace(/[^0-9.\-]/g, ''));
+    return isFinite(x) ? x : 0;
+  };
 
   function merge(gasto, leads) {
     var by = {};
