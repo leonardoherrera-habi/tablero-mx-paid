@@ -198,7 +198,7 @@
   <div class="cards">
     <div class="card">
       <h2>Inversión diaria</h2>
-      <div class="cap">Pesos mexicanos, según el reporte de la plataforma</div>
+      <div class="cap" id="capGasto">Pesos mexicanos, según el reporte de la plataforma</div>
       <div class="chart" id="chartSpend"></div>
     </div>
     <div class="card">
@@ -520,6 +520,11 @@
     var rows = slice(), t = totals(rows);
     renderTiles(t);
     var claveGasto = state.moneda === 'USD' ? 'spendUsd' : 'spend';
+    // El pie de la grafica tiene que seguir a la moneda; si no, dice pesos
+    // mientras dibuja dolares.
+    document.getElementById('capGasto').textContent = state.moneda === 'USD'
+      ? 'Dólares, convertidos desde pesos'
+      : 'Pesos mexicanos, según el reporte de la plataforma';
     barChart(document.getElementById('chartSpend'), rows,
       [{ key: claveGasto, label: 'Inversión', color: 'var(--series-spend)' }],
       function (v) { return simbolo() + Math.round(v).toLocaleString('es-MX'); });
