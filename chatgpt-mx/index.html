@@ -108,6 +108,8 @@
     background: var(--surface-0); border: 1px solid var(--line-strong); border-radius: 6px;
   }
   .custom span { font-size: 12px; color: var(--text-muted); }
+  .moneda { display: flex; align-items: center; gap: 8px; padding-left: 10px; margin-left: auto; border-left: 1px solid var(--line); }
+  .tc { font-size: 11px; color: var(--text-muted); }
 
   .banner { padding: 10px 14px; border-radius: 9px; font-size: 13px; margin-bottom: 16px; border: 1px solid; }
   .banner.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
@@ -178,6 +180,14 @@
     <div class="custom" id="custom">
       <input type="date" id="from"><span>a</span><input type="date" id="to">
     </div>
+    <div class="moneda">
+      <span class="lbl">Moneda</span>
+      <div class="seg" id="monedas">
+        <button class="range" data-m="MXN" aria-pressed="true">MXN</button>
+        <button class="range" data-m="USD">USD</button>
+      </div>
+      <span class="tc" id="tcNota"></span>
+    </div>
   </div>
 
   <div class="banner bad"  id="err"  hidden></div>
@@ -218,6 +228,10 @@
     El ciclo de calificación a cierre en México es de 49 días de mediana y 130 en el percentil 90.<br>
     El registro del 8 de septiembre fue una prueba manual, no tráfico del anuncio.
     La campaña empezó a entregar el 9.<br>
+    <b>La moneda nativa es el peso.</b> Los dólares son una conversión: usa el tipo de cambio
+    de la columna <code>tipo_cambio</code> de la hoja cuando está lleno, y 17 cuando no.
+    Un valor fijo no refleja el movimiento diario del tipo de cambio, así que para cifras
+    finas conviene llenar esa columna.<br>
     Inversión y clics salen del reporte de la plataforma; el funnel sale de BigQuery. Son dos
     fuentes distintas y pueden desfasarse — la marca de actualización de cada una está arriba.
   </footer>
@@ -238,7 +252,12 @@
   };
   var REFRESH_MS = 5 * 60 * 1000;
 
-  var state = { range: 'mes', from: null, to: null, rows: [], meta: {} };
+  // Solo se usa cuando la fila de la hoja no trae tipo_cambio propio. Es una
+  // aproximacion del mes, no una tasa diaria real: si alguien escribe el valor
+  // en la columna tipo_cambio, ese manda y el Apps Script ya no lo borra.
+  var FX_DEFAULT = 17;
+
+  var state = { range: 'mes', moneda: 'MXN', from: null, to: null, rows: [], meta: {} };
 
   // ---- utilidades ----------------------------------------------------
   var mxn = function (n) {
@@ -248,6 +267,16 @@
     return n == null ? '—' : '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
   var num = function (n) { return n == null ? '—' : n.toLocaleString('es-MX'); };
+  var simbolo = function () { return state.moneda === 'USD' ? 'US' + '\u0024' : '\u0024'; };
+  // Eligen entre el monto en pesos y el monto en dolares segun el selector.
+  var din = function (m, u) {
+    var v = state.moneda === 'USD' ? u : m;
+    return v == null ? '—' : simbolo() + v.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+  var din2 = function (m, u) {
+    var v = state.moneda === 'USD' ? u : m;
+    return v == null ? '—' : simbolo() + v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
   var pct = function (n) { return n == null ? '—' : n.toFixed(2).replace('.', ',') + '%'; };
   var div = function (a, b) { return (b && isFinite(a / b)) ? a / b : null; };
   var iso = function (d) {
@@ -349,20 +378,27 @@
 
   function merge(gasto, leads) {
     var by = {};
-    var touch = function (f) { if (!by[f]) by[f] = { fecha: f, spend: 0, clicks: 0, impr: 0, conv: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 }; return by[f]; };
+    var touch = function (f) { if (!by[f]) by[f] = { fecha: f, spend: 0, spendUsd: 0, fx: 0, clicks: 0, impr: 0, conv: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 }; return by[f]; };
     gasto.forEach(function (r) {
       var o = touch(r.fecha);
       o.spend += n(r.spend_mxn); o.clicks += n(r.clicks); o.impr += n(r.impressions);
       // Lo que la plataforma dice haber convertido. Es referencia, no verdad:
       // la cifra buena es `reg`, que sale de BigQuery.
       o.conv += n(r.conversiones_plataforma);
+      var fx = n(r.tipo_cambio);
+      if (fx > 0) o.fx = fx;
     });
     leads.forEach(function (r) {
       var o = touch(r.fecha);
       o.reg += n(r.registros); o.cal += n(r.calificados);
       o.asg += n(r.asignados);  o.cit += n(r.citas); o.cie += n(r.cierres);
     });
-    return Object.keys(by).sort().map(function (k) { return by[k]; });
+    return Object.keys(by).sort().map(function (k) {
+      var o = by[k];
+      o.fxUsado  = o.fx > 0 ? o.fx : FX_DEFAULT;
+      o.spendUsd = o.spend / o.fxUsado;
+      return o;
+    });
   }
 
   // ---- rango ---------------------------------------------------------
@@ -386,7 +422,7 @@
 
   // ---- render --------------------------------------------------------
   function totals(rows) {
-    var t = { spend: 0, clicks: 0, impr: 0, conv: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 };
+    var t = { spend: 0, spendUsd: 0, clicks: 0, impr: 0, conv: 0, reg: 0, cal: 0, asg: 0, cit: 0, cie: 0 };
     rows.forEach(function (r) {
       for (var k in t) t[k] += r[k];
     });
@@ -395,19 +431,20 @@
 
   function renderTiles(t) {
     var cpl = div(t.spend, t.reg), cpc = div(t.spend, t.clicks);
+    var cplU = div(t.spendUsd, t.reg), cpcU = div(t.spendUsd, t.clicks);
     var items = [
-      ['Inversión',   mxn(t.spend), null],
+      ['Inversión',   din(t.spend, t.spendUsd), null],
       ['Impresiones', num(t.impr),  null],
       ['Clics',       num(t.clicks),null],
       ['CTR',         t.impr ? pct(t.clicks / t.impr * 100) : '—', null],
-      ['CPC',         cpc == null ? '—' : mxn2(cpc), null],
+      ['CPC',         cpc == null ? '—' : din2(cpc, cpcU), null],
       ['Registros',   num(t.reg),   'BigQuery · la cifra buena'],
       ['Conv. plataforma', num(t.conv), 'lo que reporta el anuncio'],
       ['Calificados', num(t.cal),   null],
       ['Asignados',   num(t.asg),   null],
       ['Citas',       num(t.cit),   null],
       ['Cierres',     num(t.cie),   'ciclo de 49 días'],
-      ['CPL',         cpl == null ? '—' : mxn(cpl), t.reg ? null : 'sin registros'],
+      ['CPL',         cpl == null ? '—' : din(cpl, cplU), t.reg ? null : 'sin registros'],
       ['CVR calif.',  t.reg ? pct(t.cal / t.reg * 100) : '—', null]
     ];
     document.getElementById('tiles').innerHTML = items.map(function (it) {
@@ -461,40 +498,54 @@
     document.getElementById('tbody').innerHTML = rows.map(function (r) {
       var cpl = div(r.spend, r.reg);
       return '<tr><td>' + esc(r.fecha) + '</td>' +
-        '<td>' + mxn2(r.spend) + '</td>' +
+        '<td>' + din2(r.spend, r.spendUsd) + '</td>' +
         '<td>' + z(r.impr) + '</td><td>' + z(r.clicks) + '</td>' +
         '<td>' + (r.impr ? pct(r.clicks / r.impr * 100) : '—') + '</td>' +
-        '<td>' + (div(r.spend, r.clicks) == null ? '—' : mxn2(div(r.spend, r.clicks))) + '</td>' +
+        '<td>' + (div(r.spend, r.clicks) == null ? '—' : din2(div(r.spend, r.clicks), div(r.spendUsd, r.clicks))) + '</td>' +
         '<td>' + z(r.reg) + '</td><td>' + z(r.cal) + '</td><td>' + z(r.asg) + '</td>' +
         '<td>' + z(r.cit) + '</td><td>' + z(r.cie) + '</td>' +
-        '<td>' + (cpl == null ? '—' : mxn(cpl)) + '</td></tr>';
+        '<td>' + (cpl == null ? '—' : din(cpl, div(r.spendUsd, r.reg))) + '</td></tr>';
     }).join('') || '<tr><td colspan="12" class="empty">Sin datos en este periodo</td></tr>';
 
     document.getElementById('tfoot').innerHTML = rows.length ? '<tr><td>Total</td>' +
-      '<td>' + mxn2(t.spend) + '</td><td>' + num(t.impr) + '</td><td>' + num(t.clicks) + '</td>' +
+      '<td>' + din2(t.spend, t.spendUsd) + '</td><td>' + num(t.impr) + '</td><td>' + num(t.clicks) + '</td>' +
       '<td>' + (t.impr ? pct(t.clicks / t.impr * 100) : '—') + '</td>' +
-      '<td>' + (div(t.spend, t.clicks) == null ? '—' : mxn2(div(t.spend, t.clicks))) + '</td>' +
+      '<td>' + (div(t.spend, t.clicks) == null ? '—' : din2(div(t.spend, t.clicks), div(t.spendUsd, t.clicks))) + '</td>' +
       '<td>' + num(t.reg) + '</td><td>' + num(t.cal) + '</td><td>' + num(t.asg) + '</td>' +
       '<td>' + num(t.cit) + '</td><td>' + num(t.cie) + '</td>' +
-      '<td>' + (div(t.spend, t.reg) == null ? '—' : mxn(div(t.spend, t.reg))) + '</td></tr>' : '';
+      '<td>' + (div(t.spend, t.reg) == null ? '—' : din(div(t.spend, t.reg), div(t.spendUsd, t.reg))) + '</td></tr>' : '';
   }
 
   function render() {
     var rows = slice(), t = totals(rows);
     renderTiles(t);
+    var claveGasto = state.moneda === 'USD' ? 'spendUsd' : 'spend';
     barChart(document.getElementById('chartSpend'), rows,
-      [{ key: 'spend', label: 'Inversión', color: 'var(--series-spend)' }],
-      function (v) { return mxn(v); });
+      [{ key: claveGasto, label: 'Inversión', color: 'var(--series-spend)' }],
+      function (v) { return simbolo() + Math.round(v).toLocaleString('es-MX'); });
     barChart(document.getElementById('chartLeads'), rows,
       [{ key: 'reg', label: 'Registros', color: 'var(--series-reg)' },
        { key: 'cal', label: 'Calificados', color: 'var(--series-cal)' }],
       function (v) { return String(Math.round(v)); });
     renderTable(rows, t);
 
+    // Que tasa se usa, y si vino de la hoja o del valor por defecto.
+    var propias = rows.filter(function (r) { return r.fx > 0; }).length;
+    var tcs = rows.map(function (r) { return r.fxUsado; });
+    var lo = tcs.length ? Math.min.apply(null, tcs) : FX_DEFAULT;
+    var hi = tcs.length ? Math.max.apply(null, tcs) : FX_DEFAULT;
+    document.getElementById('tcNota').textContent = state.moneda !== 'USD' ? '' :
+      'TC ' + (lo === hi ? lo : lo + '–' + hi) +
+      (rows.length && propias === rows.length ? ' (de la hoja)' :
+       propias === 0 ? ' (por defecto)' : ' (mixto)');
+    document.querySelector('.sub').innerHTML =
+      'Campaña <b>Tuhabi_Chatgpt_Conversiones_MX_Nacional</b> · inversión en ' +
+      (state.moneda === 'USD' ? 'dólares, convertida desde pesos' : 'pesos mexicanos');
+
     // Gasto corriendo sin un solo registro es la señal que este tablero existe para dar.
     var w = document.getElementById('warn');
     if (t.spend > 0 && t.reg === 0) {
-      w.textContent = 'Hay ' + mxn(t.spend) + ' de inversión en este periodo y cero registros atribuidos. ' +
+      w.textContent = 'Hay ' + din(t.spend, t.spendUsd) + ' de inversión en este periodo y cero registros atribuidos. ' +
         'Con ' + num(t.clicks) + ' clics, a la tasa de conversión de Facebook esperarías ' +
         (t.clicks * 0.0141).toFixed(1).replace('.', ',') + ' registros.';
       w.hidden = false;
@@ -544,6 +595,17 @@
     render();
   });
 
+  document.getElementById('monedas').addEventListener('click', function (e) {
+    var b = e.target.closest('button.range');
+    if (!b) return;
+    state.moneda = b.dataset.m;
+    [].forEach.call(this.querySelectorAll('button.range'), function (x) {
+      x.setAttribute('aria-pressed', String(x === b));
+    });
+    try { localStorage.setItem('chatgpt_moneda', state.moneda); } catch (_) {}
+    render();
+  });
+
   ['from', 'to'].forEach(function (id) {
     document.getElementById(id).addEventListener('change', function () {
       state.from = document.getElementById('from').value || null;
@@ -581,6 +643,16 @@
         });
         document.getElementById('custom').classList.toggle('on', saved === 'custom');
       }
+    }
+  } catch (_) {}
+
+  try {
+    var mSaved = localStorage.getItem('chatgpt_moneda');
+    if (mSaved === 'USD' || mSaved === 'MXN') {
+      state.moneda = mSaved;
+      [].forEach.call(document.querySelectorAll('#monedas button.range'), function (x) {
+        x.setAttribute('aria-pressed', String(x.dataset.m === mSaved));
+      });
     }
   } catch (_) {}
 

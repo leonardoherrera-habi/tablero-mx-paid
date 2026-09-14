@@ -84,15 +84,28 @@ function actualizarGasto() {
                     CAMPANA + '" con fecha legible. Revisa el registro de probarConexion.');
   }
 
-  var datos = [['fecha', 'spend_mxn', 'clicks', 'impressions', 'conversiones_plataforma', 'tipo_cambio']];
-  dias.forEach(function (d) {
-    var r = porDia[d];
-    datos.push([d, Math.round(r.spend * 100) / 100, r.clicks, r.impressions, r.conv, '']);
-  });
-
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var hoja = NOMBRE_HOJA_GASTO ? ss.getSheetByName(NOMBRE_HOJA_GASTO) : ss.getSheets()[0];
   if (!hoja) throw new Error('No encontre la pestaña destino.');
+
+  // El tipo de cambio lo pone una persona, no la API. Como aqui reescribimos
+  // la hoja entera, hay que leer lo que ya esta y devolverlo tal cual; si no,
+  // cada corrida borraria lo que alguien escribio.
+  var tcPrevio = {};
+  var previo = hoja.getDataRange().getValues();
+  for (var i = 1; i < previo.length; i++) {
+    var f = previo[i][0], tc = previo[i][5];
+    if (f && tc !== '' && tc != null) {
+      tcPrevio[f instanceof Date ? Utilities.formatDate(f, TZ, 'yyyy-MM-dd') : String(f)] = tc;
+    }
+  }
+
+  var datos = [['fecha', 'spend_mxn', 'clicks', 'impressions', 'conversiones_plataforma', 'tipo_cambio']];
+  dias.forEach(function (d) {
+    var r = porDia[d];
+    datos.push([d, Math.round(r.spend * 100) / 100, r.clicks, r.impressions, r.conv,
+                tcPrevio[d] !== undefined ? tcPrevio[d] : '']);
+  });
 
   var ultimaFila = hoja.getLastRow();
   if (ultimaFila > datos.length) {
