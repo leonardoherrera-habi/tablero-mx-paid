@@ -24,14 +24,25 @@ var INICIO = '2026-09-07';
 // Dos capas a proposito:
 //   1. Lista explicita de nid para las pruebas ya hechas. Es precisa y queda
 //      auditable: se ve cual se excluyo y por que.
-//   2. Regla por dominio @prueba para las futuras. Convencion acordada el
-//      15-sep-2026: toda prueba se hace con un correo @prueba y se filtra sola.
+//   2. Regla por dominio @prueba, como red secundaria.
+//
+// OJO: la regla del correo NO es confiable por si sola. Verificado el
+// 15-sep-2026: la columna `correo` llega hasheada en algunos leads (44
+// caracteres, sin arroba) y en texto plano en otros. Una prueba hecha con
+// mariano@prueba paso de largo porque su correo llego hasheado. La lista de
+// nid es la que manda; el correo solo atrapa lo que ya venia en claro.
+//
+// Para excluir una prueba nueva: agrega su nid aqui con un comentario de la
+// fecha. Se encuentra corriendo, en BigQuery:
+//   SELECT nid, DATE(fecha_creacion) FROM tabla_inmuebles_general
+//   WHERE LOWER(campana_mercadeo) LIKE '%hatgpt%' ORDER BY fecha_creacion DESC
 //
 // A proposito NO se filtra por palabras sueltas como "test" o "demo" dentro
 // del correo: un lead real que las contenga desapareceria del tablero sin que
 // nadie lo note, y perder uno real es peor que dejar pasar uno de prueba.
 var NID_PRUEBA = [
-  '64820539031'   // 2026-09-08, prueba manual con la URL armada a mano
+  '64820539031',  // 2026-09-08, prueba manual con la URL armada a mano
+  '65059419528'   // 2026-09-15, prueba a nombre de Mariano
 ];
 
 var SQL =
