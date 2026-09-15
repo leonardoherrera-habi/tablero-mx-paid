@@ -19,6 +19,21 @@ var PROJECT_ID = 'papyrus-data-mx';
 var NOMBRE_HOJA = null;   // null = la primera pestaña
 var INICIO = '2026-09-07';
 
+// Leads de prueba que NO deben contar en el tablero.
+//
+// Dos capas a proposito:
+//   1. Lista explicita de nid para las pruebas ya hechas. Es precisa y queda
+//      auditable: se ve cual se excluyo y por que.
+//   2. Regla por dominio @prueba para las futuras. Convencion acordada el
+//      15-sep-2026: toda prueba se hace con un correo @prueba y se filtra sola.
+//
+// A proposito NO se filtra por palabras sueltas como "test" o "demo" dentro
+// del correo: un lead real que las contenga desapareceria del tablero sin que
+// nadie lo note, y perder uno real es peor que dejar pasar uno de prueba.
+var NID_PRUEBA = [
+  '64820539031'   // 2026-09-08, prueba manual con la URL armada a mano
+];
+
 var SQL =
   "WITH dias AS (\n" +
   "  SELECT d FROM UNNEST(GENERATE_DATE_ARRAY(DATE '" + INICIO + "', CURRENT_DATE('America/Mexico_City'))) AS d\n" +
@@ -45,6 +60,11 @@ var SQL =
   // y la organizacion bloquea el scope de Drive para cuentas de servicio.
   // Es una sola campaña, asi que el LIKE basta y elimina esa dependencia.
   "  WHERE LOWER(COALESCE(g.campana_mercadeo,'')) LIKE '%hatgpt%'\n" +
+  "    AND LOWER(COALESCE(g.correo,'')) NOT LIKE '%@prueba%'\n" +
+  // CAST porque nid es INT64 y la lista son cadenas.
+  (NID_PRUEBA.length
+     ? "    AND CAST(g.nid AS STRING) NOT IN ('" + NID_PRUEBA.join("','") + "')\n"
+     : "") +
   "  GROUP BY 1\n" +
   ")\n" +
   "SELECT\n" +

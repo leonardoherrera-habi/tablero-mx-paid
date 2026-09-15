@@ -2,3 +2,6 @@
 .bqtmp/
 .q_*.sql
 .ddl_*.sql
+.dict*.sql
+.q_*.sql
+.chk.js
