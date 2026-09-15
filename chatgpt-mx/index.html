@@ -85,6 +85,9 @@
   .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 64px; }
 
   header { margin-bottom: 22px; }
+  /* Mismo patron que los otros tableros del hub: enlace discreto arriba del titulo. */
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 12px; color: var(--text-muted); text-decoration: none; }
+  .back-link:hover { color: var(--text-primary); }
   h1 { margin: 0 0 4px; font-size: 22px; font-weight: 640; letter-spacing: -0.01em; }
   .sub { color: var(--text-secondary); font-size: 13px; }
   .freshness { margin-top: 10px; font-size: 12px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 14px; }
@@ -199,6 +202,7 @@
 <div class="wrap">
 
   <header>
+    <a class="back-link" href="https://leonardoherrera-habi.github.io/">← Portada</a>
     <h1>ChatGPT Ads · México</h1>
     <div class="sub">Campaña <b>Tuhabi_Chatgpt_Conversiones_MX_Nacional</b> · inversión en pesos mexicanos</div>
     <div class="freshness" id="freshness"></div>
