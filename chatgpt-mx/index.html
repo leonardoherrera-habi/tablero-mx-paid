@@ -23,6 +23,9 @@
     --bad-bg:         #fdeceb;
     --bad-line:       #f0a9a7;
     --bad-ink:        #8c1f1d;
+    --ok-bg:          #e8f6ef;
+    --ok-line:        #7fcfae;
+    --ok-ink:         #0f6446;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -43,10 +46,16 @@
       --bad-bg:         #2c1514;
       --bad-line:       #6d2d2b;
       --bad-ink:        #f0a9a7;
+      --ok-bg:          #11261e;
+      --ok-line:        #2f6b52;
+      --ok-ink:         #8fdcbb;
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
+    --ok-bg:          #11261e;
+    --ok-line:        #2f6b52;
+    --ok-ink:         #8fdcbb;
     --surface-0:      #121211;
     --surface-1:      #1a1a19;
     --line:           #2e2e2b;
@@ -122,6 +131,15 @@
   .tile .v { font-size: 21px; font-weight: 640; font-variant-numeric: tabular-nums; letter-spacing: -0.015em; }
   .tile .v.dim { color: var(--text-muted); font-weight: 500; }
   .tile .n { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  /* La banda del CPQL: color MAS etiqueta, nunca color solo. */
+  .tile.banda { border-width: 2px; }
+  .tile.b-ok   { border-color: var(--ok-line);   background: var(--ok-bg); }
+  .tile.b-ok   .v, .tile.b-ok   .n { color: var(--ok-ink); }
+  .tile.b-warn { border-color: var(--warn-line); background: var(--warn-bg); }
+  .tile.b-warn .v, .tile.b-warn .n { color: var(--warn-ink); }
+  .tile.b-bad  { border-color: var(--bad-line);  background: var(--bad-bg); }
+  .tile.b-bad  .v, .tile.b-bad  .n { color: var(--bad-ink); }
+  .tile .n b { font-weight: 700; }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 14px; margin-bottom: 20px; }
   .card { background: var(--surface-1); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
@@ -230,6 +248,14 @@
     lista de <code>nid</code> conocidos, así que las cifras de arriba son tráfico real del anuncio.
     Para que una prueba futura quede fuera sola, hazla con un correo <code>@prueba</code>.
     La campaña empezó a entregar el 9.<br>
+    <b>El veredicto sólo aparece con 5 calificados o más.</b> Con uno o dos, el CPQL se mueve por
+    un factor de tres según caiga el siguiente lead, y un color rojo ahí diría más de lo que el
+    dato sabe.<br>
+    <b>Umbrales del CPQL</b> (siempre en dólares, aunque veas pesos): altamente exitoso por debajo
+    de US$51, que le gana al promedio del mix mexicano; esperado entre US$51 y US$71, el rango de
+    Demand Gen y Meta; no exitoso por encima de US$71, peor que Meta.
+    Vienen del baseline de enero a agosto de 2026 y sustituyen al objetivo de US$25 del documento
+    original, que comparaba contra Search y P Max — captura de intención, no generación de demanda.<br>
     <b>La moneda nativa es el peso.</b> Los dólares son una conversión: usa el tipo de cambio
     de la columna <code>tipo_cambio</code> de la hoja cuando está lleno, y 17 cuando no.
     Un valor fijo no refleja el movimiento diario del tipo de cambio, así que para cifras
@@ -431,9 +457,32 @@
     return t;
   }
 
+  // Matriz de evaluacion acordada el 15-sep-2026. Los umbrales estan anclados
+  // al CPQL real de canales del propio mix mexicano, enero-agosto 2026:
+  //   promedio del mix $50,74  ·  Meta $70,96
+  // Se evaluan SIEMPRE sobre el valor en dolares, aunque el tablero muestre
+  // pesos: mover el selector de moneda no puede cambiar el veredicto.
+  var BANDAS = [
+    { max: 51,       nombre: "Altamente exitoso", clase: "b-ok"   },
+    { max: 71,       nombre: "Esperado",          clase: "b-warn" },
+    { max: Infinity, nombre: "No exitoso",        clase: "b-bad"  }
+  ];
+  // Minimo de calificados antes de emitir un veredicto. Con uno o dos, el
+  // CPQL varia por un factor de tres segun caiga el siguiente: pintar la
+  // tarjeta de rojo ahi seria un dato confiado y falso.
+  var MIN_CALIF = 5;
+  function banda(cpqlUsd, calificados) {
+    if (cpqlUsd == null || !isFinite(cpqlUsd)) return null;
+    if (!calificados || calificados < MIN_CALIF) return null;
+    for (var i = 0; i < BANDAS.length; i++) if (cpqlUsd < BANDAS[i].max) return BANDAS[i];
+    return null;
+  }
+
   function renderTiles(t) {
     var cpl = div(t.spend, t.reg), cpc = div(t.spend, t.clicks);
     var cplU = div(t.spendUsd, t.reg), cpcU = div(t.spendUsd, t.clicks);
+    var cpql = div(t.spend, t.cal), cpqlU = div(t.spendUsd, t.cal);
+    var b = banda(cpqlU, t.cal);
     var items = [
       ['Inversión',   din(t.spend, t.spendUsd), null],
       ['Impresiones', num(t.impr),  null],
@@ -447,13 +496,20 @@
       ['Citas',       num(t.cit),   null],
       ['Cierres',     num(t.cie),   'ciclo de 49 días'],
       ['CPL',         cpl == null ? '—' : din(cpl, cplU), t.reg ? null : 'sin registros'],
-      ['CVR calif.',  t.reg ? pct(t.cal / t.reg * 100) : '—', null]
+      ['CVR calif.',  t.reg ? pct(t.cal / t.reg * 100) : '—', null],
+      ['CPQL', cpql == null ? '—' : din(cpql, cpqlU),
+        b ? '<b>' + b.nombre + '</b>'
+          : (!t.cal ? 'sin calificados'
+                    : 'muestra insuficiente · ' + t.cal + ' de ' + MIN_CALIF + ' calificados'),
+        b ? b.clase : null]
     ];
     document.getElementById('tiles').innerHTML = items.map(function (it) {
       var dim = (it[1] === '—' || it[1] === '0') ? ' dim' : '';
-      return '<div class="tile"><div class="k">' + esc(it[0]) + '</div>' +
+      var cls = it[3] ? ' banda ' + it[3] : '';
+      var nota = it[2] ? (it[3] ? it[2] : esc(it[2])) : '';
+      return '<div class="tile' + cls + '"><div class="k">' + esc(it[0]) + '</div>' +
              '<div class="v' + dim + '">' + esc(it[1]) + '</div>' +
-             (it[2] ? '<div class="n">' + esc(it[2]) + '</div>' : '') + '</div>';
+             (nota ? '<div class="n">' + nota + '</div>' : '') + '</div>';
     }).join('');
   }
 
