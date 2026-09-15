@@ -141,6 +141,26 @@
   .tile.b-bad  .v, .tile.b-bad  .n { color: var(--bad-ink); }
   .tile .n b { font-weight: 700; }
 
+  .comp { background: var(--surface-1); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+  .comp h2 { margin: 0 0 2px; font-size: 14px; font-weight: 620; }
+  .comp .cap { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .comp table { border-collapse: collapse; width: 100%; max-width: 620px; font-size: 13px; }
+  .comp td { padding: 6px 10px; border: none; white-space: nowrap; }
+  .comp td.canal { text-align: left; color: var(--text-secondary); }
+  .comp td.val   { text-align: right; font-variant-numeric: tabular-nums; width: 90px; }
+  .comp td.marca { text-align: left; font-size: 11px; color: var(--text-muted); padding-left: 14px; }
+  .comp tr.umbral td { border-top: 1px dashed var(--line-strong); }
+  .comp tr.yo td { font-weight: 680; color: var(--text-primary); padding-top: 10px; }
+  .comp tr.yo td.canal::before { content: "\25B8\00a0"; }
+  .comp tr.yo.b-ok   td { color: var(--ok-ink); }
+  .comp tr.yo.b-warn td { color: var(--warn-ink); }
+  .comp tr.yo.b-bad  td { color: var(--bad-ink); }
+  .comp .chip { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid; }
+  .comp .chip.b-ok   { background: var(--ok-bg);   border-color: var(--ok-line);   color: var(--ok-ink); }
+  .comp .chip.b-warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+  .comp .chip.b-bad  { background: var(--bad-bg);  border-color: var(--bad-line);  color: var(--bad-ink); }
+  .comp .chip.b-none { background: var(--surface-0); border-color: var(--line-strong); color: var(--text-muted); }
+
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 14px; margin-bottom: 20px; }
   .card { background: var(--surface-1); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
   .card h2 { margin: 0 0 2px; font-size: 14px; font-weight: 620; }
@@ -229,6 +249,8 @@
       <div class="chart" id="chartLeads"></div>
     </div>
   </div>
+
+  <div class="comp" id="comp"></div>
 
   <div class="tblwrap">
     <table>
@@ -478,6 +500,43 @@
     return null;
   }
 
+  // CPQL real de cada canal WEB Paid de Mexico, enero-agosto 2026. Excluye
+  // Estudio Inmueble, Lead Forms, Brand y las campañas de marca de Search:
+  // con marca el CPQL de Search baja a 4 dolares y la comparacion se rompe.
+  var MIX = [
+    { canal: "Google Search genérica", cpql: 18.43 },
+    { canal: "Google P Max",           cpql: 30.67, marca: "umbral: altamente exitoso" },
+    { canal: "Promedio del mix",       cpql: 50.74, marca: "umbral: esperado" },
+    { canal: "Google Demand Gen",      cpql: 58.00 },
+    { canal: "Meta",                   cpql: 70.96, marca: "umbral: no exitoso" }
+  ];
+
+  function renderComp(t) {
+    var cpqlU = div(t.spendUsd, t.cal);
+    var b = banda(cpqlU, t.cal);
+    var chip = b
+      ? '<span class="chip ' + b.clase + '">' + esc(b.nombre) + "</span>"
+      : '<span class="chip b-none">' + (t.cal ? "muestra insuficiente" : "sin calificados") + "</span>";
+
+    var filas = MIX.map(function (m) {
+      return '<tr' + (m.marca ? ' class="umbral"' : "") + '>' +
+        '<td class="canal">' + esc(m.canal) + "</td>" +
+        '<td class="val">' + din(m.cpql * FX_DEFAULT, m.cpql) + "</td>" +
+        '<td class="marca">' + (m.marca ? esc(m.marca) : "") + "</td></tr>";
+    }).join("");
+
+    filas += '<tr class="yo ' + (b ? b.clase : "") + '">' +
+      '<td class="canal">ChatGPT Ads</td>' +
+      '<td class="val">' + (cpqlU == null ? "—" : din(div(t.spend, t.cal), cpqlU)) + "</td>" +
+      '<td class="marca">' + chip + "</td></tr>";
+
+    document.getElementById("comp").innerHTML =
+      "<h2>CPQL contra el mix mexicano</h2>" +
+      '<div class="cap">Costo por lead calificado. Baseline WEB Paid de enero a agosto de 2026; ' +
+      "ChatGPT es el periodo seleccionado arriba.</div>" +
+      "<table>" + filas + "</table>";
+  }
+
   function renderTiles(t) {
     var cpl = div(t.spend, t.reg), cpc = div(t.spend, t.clicks);
     var cplU = div(t.spendUsd, t.reg), cpcU = div(t.spendUsd, t.clicks);
@@ -577,6 +636,7 @@
   function render() {
     var rows = slice(), t = totals(rows);
     renderTiles(t);
+    renderComp(t);
     var claveGasto = state.moneda === 'USD' ? 'spendUsd' : 'spend';
     // El pie de la grafica tiene que seguir a la moneda; si no, dice pesos
     // mientras dibuja dolares.
