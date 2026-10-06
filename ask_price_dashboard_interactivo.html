@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Price Quality Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; padding: 30px 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .header h1 { font-size: 28px; color: #1a1a1a; margin-bottom: 8px; }
+        .header p { color: #666; font-size: 14px; }
+        .controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .control-group { display: flex; flex-direction: column; }
+        .control-group label { font-size: 12px; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: inherit; }
+        input:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        .channel-controls { background: #f9f9f9; border-top: 2px solid #ddd; grid-column: 1/-1; }
+        .checkbox-group { display: flex; gap: 20px; flex-wrap: wrap; }
+        .checkbox-group label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #333; cursor: pointer; margin: 0; }
+        .insights { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid #ffc107; }
+        .insights h3 { font-size: 14px; color: #666; margin-bottom: 12px; text-transform: uppercase; }
+        .insight-text { color: #333; font-size: 13px; line-height: 1.6; margin-bottom: 10px; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; background: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .summary-card { background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%); border-left: 5px solid #667eea; padding: 20px; border-radius: 6px; text-align: center; }
+        .summary-card.critical { border-left-color: #dc3545; background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%); }
+        .summary-card h4 { color: #999; font-size: 11px; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; font-weight: 700; }
+        .summary-card .value { font-size: 32px; font-weight: 900; color: #333; margin-bottom: 8px; }
+        .summary-card .subtext { font-size: 12px; color: #999; line-height: 1.5; }
+        .chart-container { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); height: 400px; }
+        .chart-title { font-size: 14px; color: #666; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .table-wrapper { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 40px; }
+        .table-title { background: #f5f5f5; padding: 20px 30px; border-bottom: 2px solid #ddd; font-size: 14px; font-weight: 600; color: #333; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; }
+        table thead { background: #fafafa; border-bottom: 2px solid #ddd; }
+        table th { padding: 16px 20px; text-align: left; font-size: 12px; color: #666; font-weight: 700; text-transform: uppercase; }
+        table td { padding: 14px 20px; font-size: 13px; color: #333; border-bottom: 1px solid #f5f5f5; }
+        table tbody tr:hover { background: #fafafa; }
+        .channel-badge { display: inline-block; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: 600; }
+        .channel-meta { background: #e3f2fd; color: #1976d2; }
+        .channel-google-search { background: #f3e5f5; color: #7b1fa2; }
+        .channel-pmax { background: #fff3e0; color: #e65100; }
+        .channel-demand-gen { background: #e0f2f1; color: #00695c; }
+        .fuente-badge { display: inline-block; padding: 2px 6px; background: #f0f0f0; color: #666; border-radius: 2px; font-size: 11px; margin-left: 6px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Ask Price Quality Dashboard</h1>
+            <p>Benchmark de solicitud de precio por canal - Últimos 90 días</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Fecha Desde</label>
+                <input type="date" id="dateFrom" value="2026-03-24" onchange="refreshDash()">
+            </div>
+            <div class="control-group">
+                <label>Fecha Hasta</label>
+                <input type="date" id="dateTo" value="2026-06-21" onchange="refreshDash()">
+            </div>
+            <div class="control-group">
+                <label>Granularidad</label>
+                <select id="granularity" onchange="refreshDash()">
+                    <option value="day">Diario</option>
+                    <option value="week">Semanal</option>
+                    <option value="month">Mensual</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Fuente</label>
+                <select id="sourceFilter" onchange="refreshDash()">
+                    <option value="all">Todas (Web + LeadForm)</option>
+                    <option value="Web">Solo Web</option>
+                    <option value="LeadForm">Solo LeadForm</option>
+                </select>
+            </div>
+            <div class="channel-controls">
+                <label style="margin-bottom: 12px;">Selecciona Canales</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="ch1" checked onchange="refreshDash()"> Meta Web</label>
+                    <label><input type="checkbox" id="ch2" checked onchange="refreshDash()"> Google Search</label>
+                    <label><input type="checkbox" id="ch3" checked onchange="refreshDash()"> Google P Max</label>
+                    <label><input type="checkbox" id="ch4" checked onchange="refreshDash()"> Google Demand Gen</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="insights">
+            <h3>💡 Recomendaciones</h3>
+            <div class="insight-text"><strong>Google P Max:</strong> Tiene ~25-30pp más leads sin ask_price. Revisa landing page y formulario.</div>
+            <div class="insight-text"><strong>Meta Web:</strong> Es tu mejor performer. Usa esa estructura en otros canales.</div>
+        </div>
+        
+        <div id="summaryCards" class="summary"></div>
+        
+        <div class="chart-container">
+            <div class="chart-title">% de Leads SIN Ask Price</div>
+            <canvas id="chart1"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Share de Leads por Canal (Total)</div>
+            <canvas id="chart2"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Share de Leads SIN Ask Price por Canal</div>
+            <canvas id="chart3"></canvas>
+        </div>
+        
+        <div class="table-wrapper">
+            <div class="table-title">📊 Datos Detallados</div>
+            <table>
+                <thead>
+                    <tr><th>Fecha</th><th>Canal</th><th>Fuente</th><th>Total</th><th>Con Price</th><th>Sin Price</th><th>%</th></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+const rawData = `fecha,canal,fuente,total_leads,leads_with_price,leads_without_price,pct_without_price
+2026-06-21,Google Demand Gen,Web,7,6,1,14.29
+2026-06-21,Google P Max,Web,28,24,4,14.29
+2026-06-21,Google Search,Web,15,14,1,6.67
+2026-06-21,Meta,LeadForm,41,11,30,73.17
+2026-06-21,Meta,Web,40,34,6,15.0
+2026-06-20,Google Demand Gen,Web,5,5,0,0.0
+2026-06-20,Google P Max,Web,28,24,4,14.29
+2026-06-20,Google Search,Web,22,21,1,4.55
+2026-06-20,Meta,LeadForm,43,6,37,86.05
+2026-06-20,Meta,Web,43,38,5,11.63
+2026-06-19,Google Demand Gen,Web,5,5,0,0.0
+2026-06-19,Google P Max,Web,42,34,8,19.05
+2026-06-19,Google Search,Web,21,18,3,14.29
+2026-06-19,Meta,LeadForm,87,20,67,77.01
+2026-06-19,Meta,Web,58,49,9,15.52
+2026-06-18,Google Demand Gen,Web,10,9,1,10.0
+2026-06-18,Google P Max,Web,28,22,6,21.43
+2026-06-18,Google Search,Web,22,20,2,9.09
+2026-06-18,Meta,LeadForm,104,25,79,75.96
+2026-06-18,Meta,Web,51,43,8,15.69
+2026-06-17,Google Demand Gen,Web,9,7,2,22.22
+2026-06-17,Google P Max,Web,27,24,3,11.11
+2026-06-17,Google Search,Web,32,28,4,12.5
+2026-06-17,Meta,LeadForm,124,35,89,71.77
+2026-06-17,Meta,Web,55,49,6,10.91
+2026-06-16,Google Demand Gen,Web,13,11,2,15.38
+2026-06-16,Google P Max,Web,32,28,4,12.5
+2026-06-16,Google Search,Web,40,36,4,10.0
+2026-06-16,Meta,LeadForm,135,27,108,80.0
+2026-06-16,Meta,Web,64,57,7,10.94
+2026-06-15,Google Demand Gen,Web,11,6,5,45.45
+2026-06-15,Google P Max,Web,51,45,6,11.76
+2026-06-15,Google Search,Web,37,31,6,16.22
+2026-06-15,Meta,LeadForm,144,45,99,68.75
+2026-06-15,Meta,Web,60,46,14,23.33
+2026-06-14,Google Demand Gen,Web,7,7,0,0.0
+2026-06-14,Google P Max,Web,19,16,3,15.79
+2026-06-14,Google Search,Web,27,22,5,18.52
+2026-06-14,Meta,LeadForm,44,7,37,84.09
+2026-06-14,Meta,Web,62,52,10,16.13
+2026-06-13,Google Demand Gen,Web,9,7,2,22.22
+2026-06-13,Google P Max,Web,21,12,9,42.86
+2026-06-13,Google Search,Web,21,17,4,19.05
+2026-06-13,Meta,LeadForm,25,4,21,84.0
+2026-06-13,Meta,Web,69,51,18,26.09
+2026-06-12,Google Demand Gen,Web,10,8,2,20.0
+2026-06-12,Google P Max,Web,34,27,7,20.59
+2026-06-12,Google Search,Web,29,25,4,13.79
+2026-06-12,Meta,LeadForm,54,14,40,74.07
+2026-06-12,Meta,Web,55,43,12,21.82
+2026-06-11,Google Demand Gen,Web,7,7,0,0.0
+2026-06-11,Google P Max,Web,28,21,7,25.0
+2026-06-11,Google Search,Web,22,21,1,4.55
+2026-06-11,Meta,LeadForm,62,11,51,82.26
+2026-06-11,Meta,Web,63,52,11,17.46
+2026-06-10,Google Demand Gen,Web,16,12,4,25.0
+2026-06-10,Google P Max,Web,26,21,5,19.23
+2026-06-10,Google Search,Web,32,30,2,6.25
+2026-06-10,Meta,LeadForm,115,24,91,79.13
+2026-06-10,Meta,Web,70,60,10,14.29
+2026-06-09,Google Demand Gen,Web,5,4,1,20.0
+2026-06-09,Google P Max,Web,45,35,10,22.22
+2026-06-09,Google Search,Web,48,42,6,12.5
+2026-06-09,Meta,LeadForm,102,21,81,79.41
+2026-06-09,Meta,Web,78,71,7,8.97
+2026-06-08,Google Demand Gen,Web,8,7,1,12.5
+2026-06-08,Google P Max,Web,43,34,9,20.93
+2026-06-08,Google Search,Web,48,37,11,22.92
+2026-06-08,Meta,LeadForm,130,25,105,80.77
+2026-06-08,Meta,Web,80,61,19,23.75
+2026-06-07,Google Demand Gen,Web,9,6,3,33.33
+2026-06-07,Google P Max,Web,18,13,5,27.78
+2026-06-07,Google Search,Web,32,27,5,15.63
+2026-06-07,Meta,LeadForm,51,9,42,82.35
+2026-06-07,Meta,Web,74,61,13,17.57
+2026-06-06,Google Demand Gen,Web,8,6,2,25.0
+2026-06-06,Google P Max,Web,23,19,4,17.39
+2026-06-06,Google Search,Web,20,16,4,20.0
+2026-06-06,Meta,LeadForm,51,16,35,68.63
+2026-06-06,Meta,Web,73,65,8,10.96
+2026-06-05,Google Demand Gen,Web,6,5,1,16.67
+2026-06-05,Google P Max,Web,34,31,3,8.82
+2026-06-05,Google Search,Web,29,24,5,17.24
+2026-06-05,Meta,LeadForm,77,14,63,81.82
+2026-06-05,Meta,Web,63,56,7,11.11
+2026-06-04,Google Demand Gen,Web,9,7,2,22.22
+2026-06-04,Google P Max,Web,40,33,7,17.5
+2026-06-04,Google Search,Web,30,23,7,23.33
+2026-06-04,Meta,LeadForm,111,27,84,75.68
+2026-06-04,Meta,Web,86,66,20,23.26
+2026-06-03,Google Demand Gen,Web,10,7,3,30.0
+2026-06-03,Google P Max,Web,48,37,11,22.92
+2026-06-03,Google Search,Web,43,37,6,13.95
+2026-06-03,Meta,LeadForm,130,26,104,80.0
+2026-06-03,Meta,Web,89,70,19,21.35
+2026-06-02,Google Demand Gen,Web,11,9,2,18.18
+2026-06-02,Google P Max,Web,39,31,8,20.51
+2026-06-02,Google Search,Web,40,35,5,12.5
+2026-06-02,Meta,LeadForm,142,35,107,75.35
+2026-06-02,Meta,Web,132,105,27,20.45
+2026-06-01,Google Demand Gen,Web,7,5,2,28.57
+2026-06-01,Google P Max,Web,53,42,11,20.75
+2026-06-01,Google Search,Web,45,33,12,26.67
+2026-06-01,Meta,LeadForm,142,37,105,73.94
+2026-06-01,Meta,Web,100,82,18,18.0
+2026-05-31,Google Demand Gen,Web,7,6,1,14.29
+2026-05-31,Google P Max,Web,33,28,5,15.15
+2026-05-31,Google Search,Web,25,21,4,16.0
+2026-05-31,Meta,LeadForm,36,11,25,69.44
+2026-05-31,Meta,Web,67,54,13,19.4
+2026-05-30,Google Demand Gen,Web,4,4,0,0.0
+2026-05-30,Google P Max,Web,27,22,5,18.52
+2026-05-30,Google Search,Web,25,22,3,12.0
+2026-05-30,Meta,LeadForm,32,5,27,84.38
+2026-05-30,Meta,Web,59,52,7,11.86
+2026-05-29,Google Demand Gen,Web,7,6,1,14.29
+2026-05-29,Google P Max,Web,30,25,5,16.67
+2026-05-29,Google Search,Web,27,24,3,11.11
+2026-05-29,Meta,LeadForm,89,26,63,70.79
+2026-05-29,Meta,Web,69,50,19,27.54
+2026-05-28,Google Demand Gen,Web,3,2,1,33.33
+2026-05-28,Google P Max,Web,29,25,4,13.79
+2026-05-28,Google Search,Web,33,30,3,9.09
+2026-05-28,Meta,LeadForm,139,38,101,72.66
+2026-05-28,Meta,Web,74,58,16,21.62
+2026-05-27,Google Demand Gen,Web,5,3,2,40.0
+2026-05-27,Google P Max,Web,25,20,5,20.0
+2026-05-27,Google Search,Web,39,33,6,15.38
+2026-05-27,Meta,LeadForm,137,25,112,81.75
+2026-05-27,Meta,Web,85,74,11,12.94
+2026-05-26,Google Demand Gen,Web,3,3,0,0.0
+2026-05-26,Google P Max,Web,30,22,8,26.67
+2026-05-26,Google Search,Web,56,49,7,12.5
+2026-05-26,Meta,LeadForm,99,23,76,76.77
+2026-05-26,Meta,Web,100,81,19,19.0
+2026-05-25,Google Demand Gen,Web,1,1,0,0.0
+2026-05-25,Google P Max,Web,54,38,16,29.63
+2026-05-25,Google Search,Web,52,45,7,13.46
+2026-05-25,Meta,LeadForm,127,48,79,62.2
+2026-05-25,Meta,Web,84,71,13,15.48
+2026-05-24,Google Demand Gen,Web,2,2,0,0.0
+2026-05-24,Google P Max,Web,45,33,12,26.67
+2026-05-24,Google Search,Web,28,24,4,14.29
+2026-05-24,Meta,LeadForm,28,14,14,50.0
+2026-05-24,Meta,Web,65,55,10,15.38
+2026-05-23,Google Demand Gen,Web,1,1,0,0.0
+2026-05-23,Google P Max,Web,49,25,24,48.98
+2026-05-23,Google Search,Web,27,25,2,7.41
+2026-05-23,Meta,LeadForm,28,5,23,82.14
+2026-05-23,Meta,Web,55,52,3,5.45
+2026-05-22,Google Demand Gen,Web,2,2,0,0.0
+2026-05-22,Google P Max,Web,45,37,8,17.78
+2026-05-22,Google Search,Web,34,29,5,14.71
+2026-05-22,Meta,LeadForm,66,20,46,69.7
+2026-05-22,Meta,Web,53,48,5,9.43
+2026-05-21,Google Demand Gen,Web,4,4,0,0.0
+2026-05-21,Google P Max,Web,44,36,8,18.18
+2026-05-21,Google Search,Web,44,42,2,4.55
+2026-05-21,Meta,LeadForm,145,44,101,69.66
+2026-05-21,Meta,Web,79,66,13,16.46
+2026-05-20,Google Demand Gen,Web,3,1,2,66.67
+2026-05-20,Google P Max,Web,49,33,16,32.65
+2026-05-20,Google Search,Web,47,41,6,12.77
+2026-05-20,Meta,LeadForm,131,46,85,64.89
+2026-05-20,Meta,Web,87,76,11,12.64
+2026-05-19,Google Demand Gen,Web,3,3,0,0.0
+2026-05-19,Google P Max,Web,52,35,17,32.69
+2026-05-19,Google Search,Web,61,57,4,6.56
+2026-05-19,Meta,LeadForm,109,43,66,60.55
+2026-05-19,Meta,Web,97,80,17,17.53
+2026-05-18,Google Demand Gen,Web,5,3,2,40.0
+2026-05-18,Google P Max,Web,59,49,10,16.95
+2026-05-18,Google Search,Web,64,58,6,9.38
+2026-05-18,Meta,LeadForm,128,41,87,67.97
+2026-05-18,Meta,Web,89,73,16,17.98
+2026-05-17,Google Demand Gen,Web,5,5,0,0.0
+2026-05-17,Google P Max,Web,67,43,24,35.82
+2026-05-17,Google Search,Web,45,39,6,13.33
+2026-05-17,Meta,LeadForm,31,8,23,74.19
+2026-05-17,Meta,Web,59,49,10,16.95
+2026-05-16,Google Demand Gen,Web,4,2,2,50.0
+2026-05-16,Google P Max,Web,50,34,16,32.0
+2026-05-16,Google Search,Web,32,27,5,15.63
+2026-05-16,Meta,LeadForm,27,13,14,51.85
+2026-05-16,Meta,Web,36,28,8,22.22
+2026-05-15,Google Demand Gen,Web,4,3,1,25.0
+2026-05-15,Google P Max,Web,39,25,14,35.9
+2026-05-15,Google Search,Web,44,37,7,15.91
+2026-05-15,Meta,LeadForm,65,26,39,60.0
+2026-05-15,Meta,Web,45,41,4,8.89
+2026-05-14,Google Demand Gen,Web,6,5,1,16.67
+2026-05-14,Google P Max,Web,50,38,12,24.0
+2026-05-14,Google Search,Web,46,35,11,23.91
+2026-05-14,Meta,LeadForm,77,26,51,66.23
+2026-05-14,Meta,Web,83,66,17,20.48
+2026-05-13,Google Demand Gen,Web,5,5,0,0.0
+2026-05-13,Google P Max,Web,31,24,7,22.58
+2026-05-13,Google Search,Web,52,44,8,15.38
+2026-05-13,Meta,LeadForm,130,44,86,66.15
+2026-05-13,Meta,Web,86,79,7,8.14
+2026-05-12,Google Demand Gen,Web,3,3,0,0.0
+2026-05-12,Google P Max,Web,56,44,12,21.43
+2026-05-12,Google Search,Web,63,54,9,14.29
+2026-05-12,Meta,LeadForm,96,30,66,68.75
+2026-05-12,Meta,Web,76,67,9,11.84
+2026-05-11,Google Demand Gen,Web,2,2,0,0.0
+2026-05-11,Google P Max,Web,54,40,14,25.93
+2026-05-11,Google Search,Web,50,39,11,22.0
+2026-05-11,Meta,LeadForm,127,49,78,61.42
+2026-05-11,Meta,Web,81,65,16,19.75
+2026-05-10,Google Demand Gen,Web,1,1,0,0.0
+2026-05-10,Google P Max,Web,38,29,9,23.68
+2026-05-10,Google Search,Web,26,26,0,0.0
+2026-05-10,Meta,LeadForm,43,10,33,76.74
+2026-05-10,Meta,Web,54,49,5,9.26
+2026-05-09,Google Demand Gen,Web,1,1,0,0.0
+2026-05-09,Google P Max,Web,38,32,6,15.79
+2026-05-09,Google Search,Web,51,45,6,11.76
+2026-05-09,Meta,LeadForm,47,11,36,76.6
+2026-05-09,Meta,Web,59,49,10,16.95
+2026-05-08,Google Demand Gen,Web,2,2,0,0.0
+2026-05-08,Google P Max,Web,36,28,8,22.22
+2026-05-08,Google Search,Web,31,29,2,6.45
+2026-05-08,Meta,LeadForm,86,18,68,79.07
+2026-05-08,Meta,Web,63,56,7,11.11
+2026-05-07,Google Demand Gen,Web,5,5,0,0.0
+2026-05-07,Google P Max,Web,42,37,5,11.9
+2026-05-07,Google Search,Web,33,27,6,18.18
+2026-05-07,Meta,LeadForm,139,28,111,79.86
+2026-05-07,Meta,Web,92,82,10,10.87
+2026-05-06,Google Demand Gen,Web,5,4,1,20.0
+2026-05-06,Google P Max,Web,53,46,7,13.21
+2026-05-06,Google Search,Web,47,42,5,10.64
+2026-05-06,Meta,LeadForm,139,36,103,74.1
+2026-05-06,Meta,Web,97,84,13,13.4
+2026-05-05,Google Demand Gen,Web,7,7,0,0.0
+2026-05-05,Google P Max,Web,70,56,14,20.0
+2026-05-05,Google Search,Web,54,47,7,12.96
+2026-05-05,Meta,LeadForm,156,34,122,78.21
+2026-05-05,Meta,Web,124,110,14,11.29
+2026-05-04,Google Demand Gen,Web,4,3,1,25.0
+2026-05-04,Google P Max,Web,41,29,12,29.27
+2026-05-04,Google Search,Web,48,44,4,8.33
+2026-05-04,Meta,LeadForm,143,40,103,72.03
+2026-05-04,Meta,Web,129,108,21,16.28
+2026-05-03,Google Demand Gen,Web,2,2,0,0.0
+2026-05-03,Google P Max,Web,34,27,7,20.59
+2026-05-03,Google Search,Web,33,32,1,3.03
+2026-05-03,Meta,LeadForm,55,13,42,76.36
+2026-05-03,Meta,Web,97,82,15,15.46
+2026-05-02,Google P Max,Web,27,23,4,14.81
+2026-05-02,Google Search,Web,30,27,3,10.0
+2026-05-02,Meta,LeadForm,42,13,29,69.05
+2026-05-02,Meta,Web,57,45,12,21.05
+2026-05-01,Google Demand Gen,Web,2,2,0,0.0
+2026-05-01,Google P Max,Web,38,34,4,10.53
+2026-05-01,Google Search,Web,24,23,1,4.17
+2026-05-01,Meta,LeadForm,58,10,48,82.76
+2026-05-01,Meta,Web,76,67,9,11.84
+2026-04-30,Google P Max,Web,43,31,12,27.91
+2026-04-30,Google Search,Web,26,23,3,11.54
+2026-04-30,Meta,LeadForm,99,24,75,75.76
+2026-04-30,Meta,Web,73,60,13,17.81
+2026-04-29,Google Demand Gen,Web,1,0,1,100.0
+2026-04-29,Google P Max,Web,39,34,5,12.82
+2026-04-29,Google Search,Web,57,45,12,21.05
+2026-04-29,Meta,LeadForm,114,52,62,54.39
+2026-04-29,Meta,Web,69,58,11,15.94
+2026-04-28,Google Demand Gen,Web,2,1,1,50.0
+2026-04-28,Google P Max,Web,24,19,5,20.83
+2026-04-28,Google Search,Web,48,45,3,6.25
+2026-04-28,Meta,LeadForm,117,34,83,70.94
+2026-04-28,Meta,Web,85,74,11,12.94
+2026-04-27,Google P Max,Web,39,31,8,20.51
+2026-04-27,Google Search,Web,46,40,6,13.04
+2026-04-27,Meta,LeadForm,112,33,79,70.54
+2026-04-27,Meta,Web,63,51,12,19.05
+2026-04-26,Google Demand Gen,Web,2,2,0,0.0
+2026-04-26,Google P Max,Web,32,26,6,18.75
+2026-04-26,Google Search,Web,35,26,9,25.71
+2026-04-26,Meta,LeadForm,41,13,28,68.29
+2026-04-26,Meta,Web,85,74,11,12.94
+2026-04-25,Google Demand Gen,Web,3,2,1,33.33
+2026-04-25,Google P Max,Web,32,25,7,21.88
+2026-04-25,Google Search,Web,22,19,3,13.64
+2026-04-25,Meta,LeadForm,36,9,27,75.0
+2026-04-25,Meta,Web,50,39,11,22.0
+2026-04-24,Google Demand Gen,Web,2,2,0,0.0
+2026-04-24,Google P Max,Web,31,26,5,16.13
+2026-04-24,Google Search,Web,37,33,4,10.81
+2026-04-24,Meta,LeadForm,125,40,85,68.0
+2026-04-24,Meta,Web,73,64,9,12.33
+2026-04-23,Google P Max,Web,36,29,7,19.44
+2026-04-23,Google Search,Web,46,34,12,26.09
+2026-04-23,Meta,LeadForm,120,41,79,65.83
+2026-04-23,Meta,Web,98,82,16,16.33
+2026-04-22,Google P Max,Web,31,29,2,6.45
+2026-04-22,Google Search,Web,56,51,5,8.93
+2026-04-22,Meta,LeadForm,112,36,76,67.86
+2026-04-22,Meta,Web,107,86,21,19.63
+2026-04-21,Google Demand Gen,Web,5,5,0,0.0
+2026-04-21,Google P Max,Web,42,38,4,9.52
+2026-04-21,Google Search,Web,47,43,4,8.51
+2026-04-21,Meta,LeadForm,164,53,111,67.68
+2026-04-21,Meta,Web,110,97,13,11.82
+2026-04-20,Google Demand Gen,Web,3,2,1,33.33
+2026-04-20,Google P Max,Web,34,33,1,2.94
+2026-04-20,Google Search,Web,52,42,10,19.23
+2026-04-20,Meta,LeadForm,170,51,119,70.0
+2026-04-20,Meta,Web,87,76,11,12.64
+2026-04-19,Google P Max,Web,29,20,9,31.03
+2026-04-19,Google Search,Web,43,35,8,18.6
+2026-04-19,Meta,LeadForm,23,10,13,56.52
+2026-04-19,Meta,Web,87,74,13,14.94
+2026-04-18,Google Demand Gen,Web,3,2,1,33.33
+2026-04-18,Google P Max,Web,32,24,8,25.0
+2026-04-18,Google Search,Web,34,31,3,8.82
+2026-04-18,Meta,LeadForm,18,7,11,61.11
+2026-04-18,Meta,Web,75,63,12,16.0
+2026-04-17,Google Demand Gen,Web,1,1,0,0.0
+2026-04-17,Google P Max,Web,38,25,13,34.21
+2026-04-17,Google Search,Web,52,44,8,15.38
+2026-04-17,Meta,LeadForm,87,29,58,66.67
+2026-04-17,Meta,Web,81,65,16,19.75
+2026-04-16,Google Demand Gen,Web,7,7,0,0.0
+2026-04-16,Google P Max,Web,30,24,6,20.0
+2026-04-16,Google Search,Web,46,35,11,23.91
+2026-04-16,Meta,LeadForm,136,49,87,63.97
+2026-04-16,Meta,Web,78,65,13,16.67
+2026-04-15,Google Demand Gen,Web,3,2,1,33.33
+2026-04-15,Google P Max,Web,34,29,5,14.71
+2026-04-15,Google Search,Web,48,38,10,20.83
+2026-04-15,Meta,LeadForm,149,47,102,68.46
+2026-04-15,Meta,Web,108,91,17,15.74
+2026-04-14,Google Demand Gen,Web,7,7,0,0.0
+2026-04-14,Google P Max,Web,51,34,17,33.33
+2026-04-14,Google Search,Web,62,57,5,8.06
+2026-04-14,Meta,LeadForm,124,33,91,73.39
+2026-04-14,Meta,Web,92,72,20,21.74
+2026-04-13,Google Demand Gen,Web,3,2,1,33.33
+2026-04-13,Google P Max,Web,98,46,52,53.06
+2026-04-13,Google Search,Web,89,77,12,13.48
+2026-04-13,Meta,LeadForm,169,49,120,71.01
+2026-04-13,Meta,Web,99,70,29,29.29
+2026-04-12,Google Demand Gen,Web,4,4,0,0.0
+2026-04-12,Google P Max,Web,60,37,23,38.33
+2026-04-12,Google Search,Web,30,25,5,16.67
+2026-04-12,Meta,LeadForm,36,13,23,63.89
+2026-04-12,Meta,Web,92,76,16,17.39
+2026-04-11,Google Demand Gen,Web,7,7,0,0.0
+2026-04-11,Google P Max,Web,90,40,50,55.56
+2026-04-11,Google Search,Web,35,29,6,17.14
+2026-04-11,Meta,LeadForm,46,21,25,54.35
+2026-04-11,Meta,Web,75,62,13,17.33
+2026-04-10,Google Demand Gen,Web,8,8,0,0.0
+2026-04-10,Google P Max,Web,96,44,52,54.17
+2026-04-10,Google Search,Web,43,41,2,4.65
+2026-04-10,Meta,LeadForm,91,30,61,67.03
+2026-04-10,Meta,Web,72,58,14,19.44
+2026-04-09,Google Demand Gen,Web,18,15,3,16.67
+2026-04-09,Google P Max,Web,107,60,47,43.93
+2026-04-09,Google Search,Web,68,61,7,10.29
+2026-04-09,Meta,LeadForm,143,46,97,67.83
+2026-04-09,Meta,Web,102,89,13,12.75
+2026-04-08,Google Demand Gen,Web,10,9,1,10.0
+2026-04-08,Google P Max,Web,143,50,93,65.03
+2026-04-08,Google Search,Web,49,42,7,14.29
+2026-04-08,Meta,LeadForm,149,44,105,70.47
+2026-04-08,Meta,Web,112,96,16,14.29
+2026-04-07,Google Demand Gen,Web,11,10,1,9.09
+2026-04-07,Google P Max,Web,131,57,74,56.49
+2026-04-07,Google Search,Web,58,50,8,13.79
+2026-04-07,Meta,LeadForm,121,35,86,71.07
+2026-04-07,Meta,Web,135,120,15,11.11
+2026-04-06,Google Demand Gen,Web,10,10,0,0.0
+2026-04-06,Google P Max,Web,122,57,65,53.28
+2026-04-06,Google Search,Web,71,61,10,14.08
+2026-04-06,Meta,LeadForm,121,31,90,74.38
+2026-04-06,Meta,Web,127,107,20,15.75
+2026-04-05,Google Demand Gen,Web,1,0,1,100.0
+2026-04-05,Google P Max,Web,131,47,84,64.12
+2026-04-05,Google Search,Web,39,35,4,10.26
+2026-04-05,Meta,LeadForm,35,8,27,77.14
+2026-04-05,Meta,Web,100,84,16,16.0
+2026-04-04,Google Demand Gen,Web,3,3,0,0.0
+2026-04-04,Google P Max,Web,126,56,70,55.56
+2026-04-04,Google Search,Web,43,35,8,18.6
+2026-04-04,Meta,LeadForm,39,11,28,71.79
+2026-04-04,Meta,Web,59,50,9,15.25
+2026-04-03,Google Demand Gen,Web,3,3,0,0.0
+2026-04-03,Google P Max,Web,108,38,70,64.81
+2026-04-03,Google Search,Web,18,16,2,11.11
+2026-04-03,Meta,LeadForm,42,16,26,61.9
+2026-04-03,Meta,Web,69,58,11,15.94
+2026-04-02,Google Demand Gen,Web,4,4,0,0.0
+2026-04-02,Google P Max,Web,105,39,66,62.86
+2026-04-02,Google Search,Web,29,19,10,34.48
+2026-04-02,Meta,LeadForm,43,11,32,74.42
+2026-04-02,Meta,Web,102,83,19,18.63
+2026-04-01,Google Demand Gen,Web,8,7,1,12.5
+2026-04-01,Google P Max,Web,90,55,35,38.89
+2026-04-01,Google Search,Web,31,29,2,6.45
+2026-04-01,Meta,LeadForm,103,33,70,67.96
+2026-04-01,Meta,Web,105,94,11,10.48
+2026-03-31,Google Demand Gen,Web,9,8,1,11.11
+2026-03-31,Google P Max,Web,74,44,30,40.54
+2026-03-31,Google Search,Web,37,34,3,8.11
+2026-03-31,Meta,LeadForm,119,28,91,76.47
+2026-03-31,Meta,Web,108,100,8,7.41
+2026-03-30,Google Demand Gen,Web,18,16,2,11.11
+2026-03-30,Google P Max,Web,91,54,37,40.66
+2026-03-30,Google Search,Web,45,38,7,15.56
+2026-03-30,Meta,LeadForm,91,25,66,72.53
+2026-03-30,Meta,Web,107,90,17,15.89
+2026-03-29,Google Demand Gen,Web,8,6,2,25.0
+2026-03-29,Google P Max,Web,47,35,12,25.53
+2026-03-29,Google Search,Web,42,35,7,16.67
+2026-03-29,Meta,LeadForm,39,11,28,71.79
+2026-03-29,Meta,Web,91,84,7,7.69
+2026-03-28,Google Demand Gen,Web,6,6,0,0.0
+2026-03-28,Google P Max,Web,46,30,16,34.78
+2026-03-28,Google Search,Web,24,23,1,4.17
+2026-03-28,Meta,LeadForm,34,6,28,82.35
+2026-03-28,Meta,Web,83,71,12,14.46
+2026-03-27,Google Demand Gen,Web,7,6,1,14.29
+2026-03-27,Google P Max,Web,50,35,15,30.0
+2026-03-27,Google Search,Web,38,32,6,15.79
+2026-03-27,Meta,LeadForm,68,15,53,77.94
+2026-03-27,Meta,Web,75,60,15,20.0
+2026-03-26,Google Demand Gen,Web,7,7,0,0.0
+2026-03-26,Google P Max,Web,66,44,22,33.33
+2026-03-26,Google Search,Web,58,49,9,15.52
+2026-03-26,Meta,LeadForm,89,25,64,71.91
+2026-03-26,Meta,Web,89,77,12,13.48
+2026-03-25,Google Demand Gen,Web,9,8,1,11.11
+2026-03-25,Google P Max,Web,58,42,16,27.59
+2026-03-25,Google Search,Web,47,42,5,10.64
+2026-03-25,Meta,LeadForm,118,38,80,67.8
+2026-03-25,Meta,Web,92,75,17,18.48
+2026-03-24,Google Demand Gen,Web,2,2,0,0.0
+2026-03-24,Google P Max,Web,69,48,21,30.43
+2026-03-24,Google Search,Web,49,49,0,0.0
+2026-03-24,Meta,LeadForm,112,38,74,66.07
+2026-03-24,Meta,Web,107,89,18,16.82`;
+
+const data = rawData.trim().split('\n').slice(1).map(line => {
+    const [fecha, canal, fuente, total_leads, leads_with_price, leads_without_price, pct_without_price] = line.split(',');
+    return {fecha, canal, fuente, total_leads: parseInt(total_leads), leads_with_price: parseInt(leads_with_price), leads_without_price: parseInt(leads_without_price), pct_without_price: parseFloat(pct_without_price)};
+});
+
+let c1 = null, c2 = null, c3 = null;
+
+function refreshDash() {
+    const df = document.getElementById('dateFrom').value;
+    const dt = document.getElementById('dateTo').value;
+    const gr = document.getElementById('granularity').value;
+    const sf = document.getElementById('sourceFilter').value;
+    const chs = ['Meta', 'Google Search', 'Google P Max', 'Google Demand Gen'].filter((ch, i) => document.getElementById(['ch1','ch2','ch3','ch4'][i]).checked);
+
+    let fdata = data.filter(r => r.fecha >= df && r.fecha <= dt && (sf === 'all' || r.fuente === sf) && chs.includes(r.canal));
+    
+    if (gr === 'week') {
+        const w = {};
+        fdata.forEach(r => {
+            const d = new Date(r.fecha);
+            const ws = new Date(d);
+            ws.setDate(d.getDate() - d.getDay());
+            const wk = ws.toISOString().split('T')[0];
+            const k = `${wk}_${r.canal}_${r.fuente}`;
+            if (!w[k]) w[k] = {fecha: wk, canal: r.canal, fuente: r.fuente, total_leads: 0, leads_with_price: 0, leads_without_price: 0};
+            w[k].total_leads += r.total_leads;
+            w[k].leads_with_price += r.leads_with_price;
+            w[k].leads_without_price += r.leads_without_price;
+        });
+        fdata = Object.values(w).map(r => ({...r, pct_without_price: Math.round((r.leads_without_price / r.total_leads) * 10000) / 100}));
+    } else if (gr === 'month') {
+        const m = {};
+        fdata.forEach(r => {
+            const mn = r.fecha.substring(0, 7);
+            const k = `${mn}_${r.canal}_${r.fuente}`;
+            if (!m[k]) m[k] = {fecha: mn, canal: r.canal, fuente: r.fuente, total_leads: 0, leads_with_price: 0, leads_without_price: 0};
+            m[k].total_leads += r.total_leads;
+            m[k].leads_with_price += r.leads_with_price;
+            m[k].leads_without_price += r.leads_without_price;
+        });
+        fdata = Object.values(m).map(r => ({...r, pct_without_price: Math.round((r.leads_without_price / r.total_leads) * 10000) / 100}));
+    }
+
+    // Tarjetas
+    const sum = {};
+    chs.forEach(ch => {
+        const cd = fdata.filter(r => r.canal === ch);
+        const tl = cd.reduce((s, r) => s + r.total_leads, 0);
+        const twp = cd.reduce((s, r) => s + r.leads_without_price, 0);
+        sum[ch] = {tl, twp, pct: tl > 0 ? Math.round((twp / tl) * 10000) / 100 : 0};
+    });
+    
+    const sc = document.getElementById('summaryCards');
+    sc.innerHTML = '';
+    Object.entries(sum).forEach(([ch, st]) => {
+        const cls = st.pct > 30 ? 'summary-card critical' : (st.pct > 15 ? 'summary-card warning' : 'summary-card');
+        const c = document.createElement('div');
+        c.className = cls;
+        c.innerHTML = `<h4>${ch}</h4><div class="value">${st.pct}%</div><div class="subtext">${st.twp} de ${st.tl}</div>`;
+        sc.appendChild(c);
+    });
+
+    // Tabla
+    const tb = document.getElementById('tableBody');
+    tb.innerHTML = '';
+    fdata.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => {
+        const tr = document.createElement('tr');
+        const b_cls = {'Meta': 'channel-meta', 'Google Search': 'channel-google-search', 'Google P Max': 'channel-pmax', 'Google Demand Gen': 'channel-demand-gen'};
+        tr.innerHTML = `<td>${r.fecha}</td><td><span class="channel-badge ${b_cls[r.canal] || ''}">${r.canal}</span></td><td><span class="fuente-badge">${r.fuente}</span></td><td>${r.total_leads}</td><td>${r.leads_with_price}</td><td>${r.leads_without_price}</td><td>${r.pct_without_price.toFixed(2)}%</td>`;
+        tb.appendChild(tr);
+    });
+
+    // Charts
+    const dates = [...new Set(fdata.map(r => r.fecha))].sort();
+    const cols = {'Meta': '#1976d2', 'Meta (LeadForm)': '#d32f2f', 'Google Search': '#7b1fa2', 'Google P Max': '#e65100', 'Google Demand Gen': '#00897b'};
+    
+    const d1_ds = [...new Set(fdata.map(r => `${r.canal}_${r.fuente}`))].map(co => {
+        const [ch, fu] = co.split('_');
+        const col = cols[co] || '#999';
+        return {label: fu === 'LeadForm' ? `${ch} (LeadForm)` : ch, data: dates.map(f => {const r = fdata.find(x => x.fecha === f && x.canal === ch && x.fuente === fu); return r ? r.pct_without_price : null;}), borderColor: col, backgroundColor: 'rgba(0,0,0,0)', borderWidth: 2, tension: 0.4, pointRadius: 2, spanGaps: true};
+    });
+    
+    if (c1) c1.destroy();
+    c1 = new Chart(document.getElementById('chart1').getContext('2d'), {type: 'line', data: {labels: dates, datasets: d1_ds}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'top'}}, scales: {y: {beginAtZero: true, max: 100, ticks: {callback: v => v + '%'}}, x: {ticks: {maxRotation: 45}}}}});
+    
+    const sh_data = {};
+    fdata.forEach(r => {if (!sh_data[r.fecha]) sh_data[r.fecha] = {}; const lb = r.fuente === 'LeadForm' ? `${r.canal} (LeadForm)` : r.canal; sh_data[r.fecha][lb] = (sh_data[r.fecha][lb] || 0) + r.total_leads;});
+    const sh_dates = Object.keys(sh_data).sort();
+    const uniq_ch = [...new Set(fdata.map(r => r.fuente === 'LeadForm' ? `${r.canal} (LeadForm)` : r.canal))];
+    const d2_ds = uniq_ch.map(c => ({label: c, data: sh_dates.map(f => sh_data[f][c] || 0), backgroundColor: cols[c] || '#999', borderWidth: 0, fill: true}));
+    
+    if (c2) c2.destroy();
+    c2 = new Chart(document.getElementById('chart2').getContext('2d'), {type: 'line', data: {labels: sh_dates, datasets: d2_ds}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'top'}, filler: {propagate: true}}, scales: {x: {stacked: true, ticks: {maxRotation: 45}}, y: {stacked: true, ticks: {callback: v => v.toLocaleString() + ' leads'}}}}});
+    
+    const shwp_data = {};
+    fdata.forEach(r => {if (!shwp_data[r.fecha]) shwp_data[r.fecha] = {}; const lb = r.fuente === 'LeadForm' ? `${r.canal} (LeadForm)` : r.canal; shwp_data[r.fecha][lb] = (shwp_data[r.fecha][lb] || 0) + r.leads_without_price;});
+    const d3_ds = uniq_ch.map(c => ({label: c, data: sh_dates.map(f => shwp_data[f][c] || 0), backgroundColor: cols[c] || '#999', borderWidth: 0, fill: true}));
+    
+    if (c3) c3.destroy();
+    c3 = new Chart(document.getElementById('chart3').getContext('2d'), {type: 'line', data: {labels: sh_dates, datasets: d3_ds}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'top'}, filler: {propagate: true}}, scales: {x: {stacked: true, ticks: {maxRotation: 45}}, y: {stacked: true, ticks: {callback: v => v.toLocaleString() + ' leads'}}}}});
+}
+
+refreshDash();
+    </script>
+</body>
+</html>

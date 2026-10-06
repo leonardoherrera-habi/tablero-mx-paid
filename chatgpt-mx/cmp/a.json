@@ -1,0 +1,570 @@
+{
+  "kind": "bigquery#queryResponse",
+  "schema": {
+    "fields": [
+      {
+        "name": "pais",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "date",
+        "type": "DATE",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "campana",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "spend",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "clicks",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "impressions",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "plataforma",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "categoria",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "producto",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "medio",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "campana_original",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "formato",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "formato_v2",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "canal_adquisicion",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "objetivo_campana",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "region_codigo",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "region",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "region_campana",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "fuente",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "area_metropolitana_id",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "area_metropolitana",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "valor_original",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "moneda",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "conversion_usd",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "conversion_cop",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "conversion_mxn",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      }
+    ]
+  },
+  "jobReference": {
+    "projectId": "papyrus-data-mx",
+    "jobId": "job_QD7TYTeelq9ZiNenzr116rR99pln",
+    "location": "US"
+  },
+  "totalRows": "5",
+  "rows": [
+    {
+      "f": [
+        {
+          "v": "Mexico"
+        },
+        {
+          "v": "2026-07-27"
+        },
+        {
+          "v": "FB_HabiWeb_LeadAds_ADVANTAGE_ConvLeadAds"
+        },
+        {
+          "v": "10.085564220183485"
+        },
+        {
+          "v": "428.0"
+        },
+        {
+          "v": "49211.0"
+        },
+        {
+          "v": "Facebook"
+        },
+        {
+          "v": "Performance"
+        },
+        {
+          "v": "Sellers"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "FB_HabiWeb_LeadAds_ADVANTAGE_ConvLeadAds"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Lead Form"
+        },
+        {
+          "v": "Meta_leads"
+        },
+        {
+          "v": "desconocida"
+        },
+        {
+          "v": "State of Mexico"
+        },
+        {
+          "v": "Desconocida"
+        },
+        {
+          "v": null
+        },
+        {
+          "v": null
+        },
+        {
+          "v": "sin area metropolitana"
+        },
+        {
+          "v": "175.89224"
+        },
+        {
+          "v": "USD"
+        },
+        {
+          "v": "10.09"
+        },
+        {
+          "v": "32380.31"
+        },
+        {
+          "v": "175.89"
+        }
+      ]
+    },
+    {
+      "f": [
+        {
+          "v": "Mexico"
+        },
+        {
+          "v": "2026-07-25"
+        },
+        {
+          "v": "FB_HabiWeb_LeadAds_ADVANTAGE_ConvLeadAds"
+        },
+        {
+          "v": "0.5263459335624283"
+        },
+        {
+          "v": "10.0"
+        },
+        {
+          "v": "1280.0"
+        },
+        {
+          "v": "Facebook"
+        },
+        {
+          "v": "Performance"
+        },
+        {
+          "v": "Sellers"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "FB_HabiWeb_LeadAds_ADVANTAGE_ConvLeadAds"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Lead Form"
+        },
+        {
+          "v": "Meta_leads"
+        },
+        {
+          "v": "desconocida"
+        },
+        {
+          "v": "Querétaro Arteaga"
+        },
+        {
+          "v": "Desconocida"
+        },
+        {
+          "v": null
+        },
+        {
+          "v": null
+        },
+        {
+          "v": "sin area metropolitana"
+        },
+        {
+          "v": "9.19"
+        },
+        {
+          "v": "USD"
+        },
+        {
+          "v": "0.53"
+        },
+        {
+          "v": "1689.87"
+        },
+        {
+          "v": "9.19"
+        }
+      ]
+    },
+    {
+      "f": [
+        {
+          "v": "Mexico"
+        },
+        {
+          "v": "2026-07-25"
+        },
+        {
+          "v": "tuh-mex-sel-pai-per-lfr-mta-mld-oto-nal-form_full_funnel"
+        },
+        {
+          "v": "2.24971363115693"
+        },
+        {
+          "v": "91.0"
+        },
+        {
+          "v": "4397.0"
+        },
+        {
+          "v": "Facebook"
+        },
+        {
+          "v": "Performance"
+        },
+        {
+          "v": "Sellers"
+        },
+        {
+          "v": "Paid"
+        },
+        {
+          "v": "tuh-mex-sel-pai-per-lfr-mta-mld-oto-nal-form_full_funnel"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Lead Form"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "nal"
+        },
+        {
+          "v": "Nuevo León"
+        },
+        {
+          "v": "Nacional"
+        },
+        {
+          "v": null
+        },
+        {
+          "v": null
+        },
+        {
+          "v": "Zona metropolitana Monterrey"
+        },
+        {
+          "v": "39.28"
+        },
+        {
+          "v": "USD"
+        },
+        {
+          "v": "2.25"
+        },
+        {
+          "v": "7222.84"
+        },
+        {
+          "v": "39.28"
+        }
+      ]
+    },
+    {
+      "f": [
+        {
+          "v": "Mexico"
+        },
+        {
+          "v": "2026-08-24"
+        },
+        {
+          "v": "FB_HabiWeb_Conversiones_Nacional_Advantage_Web"
+        },
+        {
+          "v": "0.23054245283018868"
+        },
+        {
+          "v": "14.0"
+        },
+        {
+          "v": "1126.0"
+        },
+        {
+          "v": "Facebook"
+        },
+        {
+          "v": "Performance"
+        },
+        {
+          "v": "Sellers"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "FB_HabiWeb_Conversiones_Nacional_Advantage_Web"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Meta_leads"
+        },
+        {
+          "v": "nal"
+        },
+        {
+          "v": "Hidalgo"
+        },
+        {
+          "v": "Nacional"
+        },
+        {
+          "v": null
+        },
+        {
+          "v": null
+        },
+        {
+          "v": "Zona metropolitana Hidalgo"
+        },
+        {
+          "v": "3.91"
+        },
+        {
+          "v": "USD"
+        },
+        {
+          "v": "0.23"
+        },
+        {
+          "v": "702.72"
+        },
+        {
+          "v": "3.91"
+        }
+      ]
+    },
+    {
+      "f": [
+        {
+          "v": "Mexico"
+        },
+        {
+          "v": "2026-08-21"
+        },
+        {
+          "v": "FB_HabiWeb_Conversiones_Nacional_Advantage_Web_Zonas"
+        },
+        {
+          "v": "0.1988031360946746"
+        },
+        {
+          "v": "7.0"
+        },
+        {
+          "v": "803.0"
+        },
+        {
+          "v": "Facebook"
+        },
+        {
+          "v": "Performance"
+        },
+        {
+          "v": "Sellers"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "FB_HabiWeb_Conversiones_Nacional_Advantage_Web_Zonas"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Otro"
+        },
+        {
+          "v": "Meta_leads"
+        },
+        {
+          "v": "nal"
+        },
+        {
+          "v": "Hidalgo"
+        },
+        {
+          "v": "Nacional"
+        },
+        {
+          "v": null
+        },
+        {
+          "v": null
+        },
+        {
+          "v": "Zona metropolitana Hidalgo"
+        },
+        {
+          "v": "3.359773"
+        },
+        {
+          "v": "USD"
+        },
+        {
+          "v": "0.2"
+        },
+        {
+          "v": "608.93"
+        },
+        {
+          "v": "3.36"
+        }
+      ]
+    }
+  ],
+  "totalBytesProcessed": "119775894",
+  "jobComplete": true,
+  "cacheHit": false,
+  "queryId": "job_QD7TYTeelq9ZiNenzr116rR99pln",
+  "jobCreationReason": {
+    "code": "REQUESTED"
+  },
+  "totalBytesBilled": "0",
+  "totalSlotMs": "0",
+  "location": "US",
+  "creationTime": "1790214226106",
+  "startTime": "1790214226228",
+  "endTime": "1790214226543",
+  "pageRowCount": "5",
+  "statementType": "SELECT"
+}

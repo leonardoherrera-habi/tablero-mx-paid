@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Price Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 { color: #222; font-size: 28px; margin: 0 0 10px 0; }
+        .subtitle { color: #666; margin-bottom: 25px; font-size: 14px; }
+        .status { padding: 12px; margin-bottom: 20px; border-radius: 4px; font-size: 13px; text-align: center; }
+        .status.success { background: #e8f5e9; color: #2e7d32; }
+        .status.error { background: #ffebee; color: #c62828; }
+        .filters { background: #f9f9f9; padding: 20px; border-radius: 6px; margin-bottom: 25px; display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
+        .filter-group { display: flex; flex-direction: column; gap: 6px; }
+        .filter-group label { font-weight: 600; font-size: 13px; color: #555; }
+        input, select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        button { padding: 8px 16px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .card { padding: 20px; border-radius: 6px; border-left: 4px solid; background: white; }
+        .card.good { border-left-color: #4caf50; background: #f1f8e9; }
+        .card.warning { border-left-color: #ff9800; background: #fff3e0; }
+        .card.critical { border-left-color: #f44336; background: #ffebee; }
+        .card-label { font-size: 12px; color: #666; font-weight: 600; margin-bottom: 8px; }
+        .card-value { font-size: 28px; font-weight: 700; color: #222; }
+        .card-metric { font-size: 12px; color: #999; margin-top: 8px; }
+        .chart-container { background: #fafafa; padding: 20px; border-radius: 6px; border: 1px solid #e0e0e0; margin-bottom: 30px; }
+        .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #222; }
+        .chart-wrapper { position: relative; height: 350px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 20px; }
+        th { background: #f5f5f5; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+        tr:hover { background: #fafafa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Ask Price Dashboard</h1>
+        <p class="subtitle">Benchmark de calidad: % leads sin ask_price por canal</p>
+        
+        <div id="status" class="status error">Cargando...</div>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label>Desde:</label>
+                <input type="date" id="dateFrom">
+            </div>
+            <div class="filter-group">
+                <label>Hasta:</label>
+                <input type="date" id="dateTo">
+            </div>
+            <button onclick="refresh()">Actualizar</button>
+        </div>
+        
+        <div id="cards" class="cards"></div>
+        
+        <div class="chart-container">
+            <div class="chart-title">% Sin Ask Price por Día</div>
+            <div class="chart-wrapper"><canvas id="chart1"></canvas></div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Share de Leads</div>
+            <div class="chart-wrapper"><canvas id="chart2"></canvas></div>
+        </div>
+        
+        <h2>Datos</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Canal</th>
+                    <th>Fuente</th>
+                    <th>Total</th>
+                    <th>Con Price</th>
+                    <th>Sin Price</th>
+                    <th>%</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    
+    <script>
+        let data = [];
+        let c1 = null, c2 = null;
+        
+        const colors = {
+            'Meta': '#1877f2',
+            'Google Search': '#4285f4',
+            'Google P Max': '#ea4335',
+            'Google Demand Gen': '#fbbc04'
+        };
+        
+        async function load() {
+            try {
+                const url = 'https://docs.google.com/spreadsheets/d/1_lYIa34n-L4v2PNsEL3Vjx_5YLRQEJFWDRJ-6K-Fu1Y/export?format=csv&gid=0';
+                const res = await fetch(url);
+                const csv = await res.text();
+                
+                const lines = csv.trim().split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                
+                data = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const obj = {};
+                    const vals = lines[i].split(',').map(v => v.trim());
+                    headers.forEach((h, j) => obj[h] = vals[j] || '');
+                    if (obj.fecha) data.push(obj);
+                }
+                
+                const today = new Date();
+                const ago = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+                document.getElementById('dateFrom').value = ago.toISOString().split('T')[0];
+                document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+                
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').textContent = '✅ Datos cargados (' + data.length + ' registros)';
+                
+                refresh();
+            } catch (e) {
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = '❌ Error: ' + e.message;
+            }
+        }
+        
+        function refresh() {
+            const from = new Date(document.getElementById('dateFrom').value);
+            const to = new Date(document.getElementById('dateTo').value);
+            
+            const filtered = data.filter(r => {
+                const d = new Date(r.fecha);
+                return d >= from && d <= to;
+            });
+            
+            // Cards
+            const grouped = {};
+            filtered.forEach(r => {
+                if (!grouped[r.canal]) grouped[r.canal] = { t: 0, w: 0 };
+                grouped[r.canal].t += parseInt(r.total_leads) || 0;
+                grouped[r.canal].w += parseInt(r.leads_without_price) || 0;
+            });
+            
+            let html = '';
+            for (const [canal, g] of Object.entries(grouped)) {
+                const pct = (100 * g.w / g.t).toFixed(2);
+                let cls = 'good';
+                if (pct > 30) cls = 'critical';
+                else if (pct > 15) cls = 'warning';
+                html += `<div class="card ${cls}"><div class="card-label">${canal}</div><div class="card-value">${pct}%</div><div class="card-metric">${g.w}/${g.t}</div></div>`;
+            }
+            document.getElementById('cards').innerHTML = html;
+            
+            // Charts
+            const daily = {};
+            const byc = {};
+            const byc_w = {};
+            
+            filtered.forEach(r => {
+                const f = r.fecha;
+                const c = r.canal;
+                const t = parseInt(r.total_leads) || 0;
+                const w = parseInt(r.leads_without_price) || 0;
+                
+                if (!daily[f]) daily[f] = {};
+                if (!daily[f][c]) daily[f][c] = { t: 0, w: 0 };
+                daily[f][c].t += t;
+                daily[f][c].w += w;
+                
+                byc[c] = (byc[c] || 0) + t;
+                byc_w[c] = (byc_w[c] || 0) + w;
+            });
+            
+            const dates = Object.keys(daily).sort();
+            const chans = [...new Set(filtered.map(r => r.canal))];
+            
+            // Chart 1
+            const d1 = {};
+            chans.forEach(c => {
+                d1[c] = dates.map(f => {
+                    const x = daily[f][c];
+                    return x ? (100 * x.w / x.t).toFixed(1) : 0;
+                });
+            });
+            
+            if (c1) c1.destroy();
+            c1 = new Chart(document.getElementById('chart1'), {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: chans.map(c => ({
+                        label: c,
+                        data: d1[c],
+                        borderColor: colors[c],
+                        backgroundColor: colors[c] + '15',
+                        tension: 0.4,
+                        pointRadius: 3
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { min: 0, max: 100 } }
+                }
+            });
+            
+            // Chart 2
+            if (c2) c2.destroy();
+            c2 = new Chart(document.getElementById('chart2'), {
+                type: 'bar',
+                data: {
+                    labels: chans,
+                    datasets: [{
+                        label: 'Leads',
+                        data: chans.map(c => byc[c]),
+                        backgroundColor: chans.map(c => colors[c])
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+            
+            // Table
+            html = '';
+            filtered.forEach(r => {
+                html += `<tr><td>${r.fecha}</td><td>${r.canal}</td><td>${r.fuente}</td><td>${r.total_leads}</td><td>${r.leads_with_price}</td><td>${r.leads_without_price}</td><td>${r.pct_without_price}%</td></tr>`;
+            });
+            document.getElementById('tbody').innerHTML = html;
+        }
+        
+        load();
+        setInterval(load, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Price Dashboard - MX Paid Media</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+            color: #222;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        
+        .filters {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .filter-group label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+        }
+        
+        .filter-group input,
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+            min-width: 150px;
+        }
+        
+        .load-status {
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        .load-status.loading {
+            background: #e3f2fd;
+            color: #0066cc;
+        }
+        
+        .load-status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .load-status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .charts-section {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #222;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .summary-card {
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .summary-card.good {
+            border-left-color: #4caf50;
+            background: #f1f8e9;
+        }
+        
+        .summary-card.warning {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+        
+        .summary-card.critical {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        
+        .card-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .card-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #222;
+        }
+        
+        .card-metric {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        
+        .data-table th {
+            background: #f5f5f5;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+            color: #555;
+        }
+        
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .data-table tr:hover {
+            background: #fafafa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Ask Price Dashboard - MX Paid Media</h1>
+        <p class="subtitle">Benchmark de calidad: % leads sin precio solicitado por canal</p>
+        
+        <div id="loadStatus" class="load-status loading">Cargando datos...</div>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label>Desde:</label>
+                <input type="date" id="dateFrom">
+            </div>
+            <div class="filter-group">
+                <label>Hasta:</label>
+                <input type="date" id="dateTo">
+            </div>
+            <button onclick="refreshDash()" style="padding: 8px 16px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">Actualizar</button>
+        </div>
+        
+        <div id="summaryCards" class="summary-cards"></div>
+        
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-title">% de Leads SIN Ask Price</div>
+                <div class="chart-wrapper">
+                    <canvas id="chart1"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">Share de Leads (Total)</div>
+                <div class="chart-wrapper">
+                    <canvas id="chart2"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: #222;">Datos Detallados</h2>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Canal</th>
+                    <th>Fuente</th>
+                    <th>Total Leads</th>
+                    <th>Con Ask Price</th>
+                    <th>Sin Ask Price</th>
+                    <th>% Sin Ask Price</th>
+                </tr>
+            </thead>
+            <tbody id="dataTable"></tbody>
+        </table>
+    </div>
+    
+    <script>
+        let rawData = [];
+        let c1 = null, c2 = null;
+        
+        const channelColors = {
+            'Meta': '#1877f2',
+            'Google Search': '#4285f4',
+            'Google P Max': '#ea4335',
+            'Google Demand Gen': '#fbbc04'
+        };
+        
+        async function loadData() {
+            try {
+                const response = await fetch('./data.csv');
+                if (!response.ok) throw new Error('No se pudo cargar data.csv');
+                
+                const csv = await response.text();
+                rawData = parseCSV(csv);
+                
+                const today = new Date();
+                const ninetyDaysAgo = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+                
+                document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+                document.getElementById('dateFrom').value = ninetyDaysAgo.toISOString().split('T')[0];
+                
+                document.getElementById('loadStatus').className = 'load-status success';
+                document.getElementById('loadStatus').textContent = 'Datos cargados correctamente';
+                
+                refreshDash();
+            } catch (error) {
+                document.getElementById('loadStatus').className = 'load-status error';
+                document.getElementById('loadStatus').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const obj = {};
+                const values = lines[i].split(',').map(v => v.trim());
+                headers.forEach((header, idx) => {
+                    obj[header] = values[idx] || '';
+                });
+                if (obj.fecha) data.push(obj);
+            }
+            return data;
+        }
+        
+        function refreshDash() {
+            const dateFrom = new Date(document.getElementById('dateFrom').value);
+            const dateTo = new Date(document.getElementById('dateTo').value);
+            
+            const filteredData = rawData.filter(row => {
+                const fecha = new Date(row.fecha);
+                return fecha >= dateFrom && fecha <= dateTo;
+            });
+            
+            updateSummaryCards(filteredData);
+            updateCharts(filteredData);
+            updateTable(filteredData);
+        }
+        
+        function updateSummaryCards(data) {
+            const grouped = {};
+            data.forEach(row => {
+                if (!grouped[row.canal]) {
+                    grouped[row.canal] = { total: 0, without: 0 };
+                }
+                grouped[row.canal].total += parseInt(row.total_leads) || 0;
+                grouped[row.canal].without += parseInt(row.leads_without_price) || 0;
+            });
+            
+            const html = Object.entries(grouped).map(([canal, dat]) => {
+                const pct = (100 * dat.without / dat.total).toFixed(2);
+                let css = 'good';
+                if (pct > 30) css = 'critical';
+                else if (pct > 15) css = 'warning';
+                
+                return `
+                    <div class="summary-card ${css}">
+                        <div class="card-label">${canal}</div>
+                        <div class="card-value">${pct}%</div>
+                        <div class="card-metric">${dat.without} / ${dat.total}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('summaryCards').innerHTML = html;
+        }
+        
+        function updateCharts(data) {
+            const dailyData = {};
+            const totalByChannel = {};
+            const withoutByChannel = {};
+            
+            data.forEach(row => {
+                const fecha = row.fecha;
+                const canal = row.canal;
+                const total = parseInt(row.total_leads) || 0;
+                const without = parseInt(row.leads_without_price) || 0;
+                
+                if (!dailyData[fecha]) dailyData[fecha] = {};
+                if (!dailyData[fecha][canal]) dailyData[fecha][canal] = { total: 0, without: 0 };
+                
+                dailyData[fecha][canal].total += total;
+                dailyData[fecha][canal].without += without;
+                
+                totalByChannel[canal] = (totalByChannel[canal] || 0) + total;
+                withoutByChannel[canal] = (withoutByChannel[canal] || 0) + without;
+            });
+            
+            const dates = Object.keys(dailyData).sort();
+            const channels = [...new Set(data.map(r => r.canal))];
+            
+            const chart1Data = {};
+            channels.forEach(canal => {
+                chart1Data[canal] = dates.map(fecha => {
+                    const d = dailyData[fecha][canal];
+                    return d ? (100 * d.without / d.total).toFixed(2) : 0;
+                });
+            });
+            
+            if (c1) c1.destroy();
+            c1 = new Chart(document.getElementById('chart1'), {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: channels.map(canal => ({
+                        label: canal,
+                        data: chart1Data[canal],
+                        borderColor: channelColors[canal],
+                        backgroundColor: channelColors[canal] + '15',
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+            
+            if (c2) c2.destroy();
+            c2 = new Chart(document.getElementById('chart2'), {
+                type: 'bar',
+                data: {
+                    labels: channels,
+                    datasets: [{
+                        label: 'Total Leads',
+                        data: channels.map(c => totalByChannel[c]),
+                        backgroundColor: channels.map(c => channelColors[c])
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+        
+        function updateTable(data) {
+            const html = data.map(row => `
+                <tr>
+                    <td>${row.fecha}</td>
+                    <td>${row.canal}</td>
+                    <td>${row.fuente}</td>
+                    <td>${row.total_leads}</td>
+                    <td>${row.leads_with_price}</td>
+                    <td>${row.leads_without_price}</td>
+                    <td><strong>${row.pct_without_price}%</strong></td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('dataTable').innerHTML = html;
+        }
+        
+        loadData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+fecha,canal,fuente,total_leads,leads_with_price,leads_without_price,pct_without_price
+30/06/2026,Google P Max,Web,31,21,10,"32,26"
+30/06/2026,Google Search,Web,22,18,4,"18,18"
+30/06/2026,Meta,LeadForm,47,10,37,"78,72"
+30/06/2026,Meta,Web,26,24,2,"7,69"
+29/06/2026,Google Demand Gen,Web,5,4,1,20
+29/06/2026,Google P Max,Web,54,39,15,"27,78"
+29/06/2026,Google Search,Web,40,33,7,"17,5"
+29/06/2026,Meta,LeadForm,129,27,102,"79,07"
+29/06/2026,Meta,Web,62,54,8,"12,9"
+28/06/2026,Google Demand Gen,Web,11,10,1,"9,09"
+28/06/2026,Google P Max,Web,37,27,10,"27,03"
+28/06/2026,Google Search,Web,31,30,1,"3,23"
+28/06/2026,Meta,LeadForm,46,12,34,"73,91"
+28/06/2026,Meta,Web,51,38,13,"25,49"
+27/06/2026,Google Demand Gen,Web,10,9,1,10
+27/06/2026,Google P Max,Web,31,23,8,"25,81"
+27/06/2026,Google Search,Web,10,6,4,40
+27/06/2026,Meta,LeadForm,50,4,46,92
+27/06/2026,Meta,Web,70,57,13,"18,57"
+26/06/2026,Google Demand Gen,Web,12,9,3,25
+26/06/2026,Google P Max,Web,59,41,18,"30,51"
+26/06/2026,Google Search,Web,27,22,5,"18,52"
+26/06/2026,Meta,LeadForm,82,15,67,"81,71"
+26/06/2026,Meta,Web,68,58,10,"14,71"
+25/06/2026,Google Demand Gen,Web,7,6,1,"14,29"
+25/06/2026,Google P Max,Web,53,42,11,"20,75"
+25/06/2026,Google Search,Web,33,30,3,"9,09"
+25/06/2026,Meta,LeadForm,107,27,80,"74,77"
+25/06/2026,Meta,Web,60,49,11,"18,33"
+24/06/2026,Google Demand Gen,Web,4,4,0,0
+24/06/2026,Google P Max,Web,50,38,12,24
+24/06/2026,Google Search,Web,24,22,2,"8,33"
+24/06/2026,Meta,LeadForm,116,31,85,"73,28"
+24/06/2026,Meta,Web,68,62,6,"8,82"
+23/06/2026,Google Demand Gen,Web,8,8,0,0
+23/06/2026,Google P Max,Web,34,30,4,"11,76"
+23/06/2026,Google Search,Web,35,26,9,"25,71"
+23/06/2026,Meta,LeadForm,122,29,93,"76,23"
+23/06/2026,Meta,Web,77,65,12,"15,58"
+22/06/2026,Google Demand Gen,Web,5,3,2,40
+22/06/2026,Google P Max,Web,53,41,12,"22,64"
+22/06/2026,Google Search,Web,37,36,1,"2,7"
+22/06/2026,Meta,LeadForm,122,28,94,"77,05"
+22/06/2026,Meta,Web,57,50,7,"12,28"
+21/06/2026,Google Demand Gen,Web,7,6,1,"14,29"
+21/06/2026,Google P Max,Web,28,24,4,"14,29"
+21/06/2026,Google Search,Web,15,14,1,"6,67"
+21/06/2026,Meta,LeadForm,41,12,29,"70,73"
+21/06/2026,Meta,Web,40,34,6,15
+20/06/2026,Google Demand Gen,Web,5,5,0,0
+20/06/2026,Google P Max,Web,28,24,4,"14,29"
+20/06/2026,Google Search,Web,22,21,1,"4,55"
+20/06/2026,Meta,LeadForm,43,8,35,"81,4"
+20/06/2026,Meta,Web,43,38,5,"11,63"
+19/06/2026,Google Demand Gen,Web,5,5,0,0
+19/06/2026,Google P Max,Web,42,34,8,"19,05"
+19/06/2026,Google Search,Web,21,18,3,"14,29"
+19/06/2026,Meta,LeadForm,87,20,67,"77,01"
+19/06/2026,Meta,Web,58,49,9,"15,52"
+18/06/2026,Google Demand Gen,Web,10,9,1,10
+18/06/2026,Google P Max,Web,28,22,6,"21,43"
+18/06/2026,Google Search,Web,22,20,2,"9,09"
+18/06/2026,Meta,LeadForm,104,25,79,"75,96"
+18/06/2026,Meta,Web,51,43,8,"15,69"
+17/06/2026,Google Demand Gen,Web,9,7,2,"22,22"
+17/06/2026,Google P Max,Web,27,24,3,"11,11"
+17/06/2026,Google Search,Web,32,28,4,"12,5"
+17/06/2026,Meta,LeadForm,124,35,89,"71,77"
+17/06/2026,Meta,Web,55,49,6,"10,91"
+16/06/2026,Google Demand Gen,Web,13,11,2,"15,38"
+16/06/2026,Google P Max,Web,32,28,4,"12,5"
+16/06/2026,Google Search,Web,40,36,4,10
+16/06/2026,Meta,LeadForm,135,29,106,"78,52"
+16/06/2026,Meta,Web,64,57,7,"10,94"
+15/06/2026,Google Demand Gen,Web,11,6,5,"45,45"
+15/06/2026,Google P Max,Web,51,45,6,"11,76"
+15/06/2026,Google Search,Web,37,31,6,"16,22"
+15/06/2026,Meta,LeadForm,144,45,99,"68,75"
+15/06/2026,Meta,Web,60,46,14,"23,33"
+14/06/2026,Google Demand Gen,Web,7,7,0,0
+14/06/2026,Google P Max,Web,19,16,3,"15,79"
+14/06/2026,Google Search,Web,27,22,5,"18,52"
+14/06/2026,Meta,LeadForm,44,7,37,"84,09"
+14/06/2026,Meta,Web,62,52,10,"16,13"
+13/06/2026,Google Demand Gen,Web,9,7,2,"22,22"
+13/06/2026,Google P Max,Web,21,12,9,"42,86"
+13/06/2026,Google Search,Web,21,17,4,"19,05"
+13/06/2026,Meta,LeadForm,25,4,21,84
+13/06/2026,Meta,Web,69,51,18,"26,09"
+12/06/2026,Google Demand Gen,Web,10,8,2,20
+12/06/2026,Google P Max,Web,34,27,7,"20,59"
+12/06/2026,Google Search,Web,29,25,4,"13,79"
+12/06/2026,Meta,LeadForm,54,16,38,"70,37"
+12/06/2026,Meta,Web,55,43,12,"21,82"
+11/06/2026,Google Demand Gen,Web,7,7,0,0
+11/06/2026,Google P Max,Web,28,21,7,25
+11/06/2026,Google Search,Web,22,21,1,"4,55"
+11/06/2026,Meta,LeadForm,62,11,51,"82,26"
+11/06/2026,Meta,Web,63,52,11,"17,46"
+10/06/2026,Google Demand Gen,Web,16,12,4,25
+10/06/2026,Google P Max,Web,26,21,5,"19,23"
+10/06/2026,Google Search,Web,32,30,2,"6,25"
+10/06/2026,Meta,LeadForm,115,25,90,"78,26"
+10/06/2026,Meta,Web,70,60,10,"14,29"
+9/06/2026,Google Demand Gen,Web,5,4,1,20
+9/06/2026,Google P Max,Web,45,35,10,"22,22"
+9/06/2026,Google Search,Web,48,42,6,"12,5"
+9/06/2026,Meta,LeadForm,102,21,81,"79,41"
+9/06/2026,Meta,Web,78,71,7,"8,97"
+8/06/2026,Google Demand Gen,Web,8,7,1,"12,5"
+8/06/2026,Google P Max,Web,43,34,9,"20,93"
+8/06/2026,Google Search,Web,48,37,11,"22,92"
+8/06/2026,Meta,LeadForm,130,25,105,"80,77"
+8/06/2026,Meta,Web,80,61,19,"23,75"
+7/06/2026,Google Demand Gen,Web,9,6,3,"33,33"
+7/06/2026,Google P Max,Web,18,13,5,"27,78"
+7/06/2026,Google Search,Web,32,27,5,"15,63"
+7/06/2026,Meta,LeadForm,51,9,42,"82,35"
+7/06/2026,Meta,Web,74,61,13,"17,57"
+6/06/2026,Google Demand Gen,Web,8,6,2,25
+6/06/2026,Google P Max,Web,23,19,4,"17,39"
+6/06/2026,Google Search,Web,20,16,4,20
+6/06/2026,Meta,LeadForm,51,16,35,"68,63"
+6/06/2026,Meta,Web,73,65,8,"10,96"
+5/06/2026,Google Demand Gen,Web,6,5,1,"16,67"
+5/06/2026,Google P Max,Web,34,31,3,"8,82"
+5/06/2026,Google Search,Web,29,24,5,"17,24"
+5/06/2026,Meta,LeadForm,77,15,62,"80,52"
+5/06/2026,Meta,Web,63,56,7,"11,11"
+4/06/2026,Google Demand Gen,Web,9,7,2,"22,22"
+4/06/2026,Google P Max,Web,40,33,7,"17,5"
+4/06/2026,Google Search,Web,30,23,7,"23,33"
+4/06/2026,Meta,LeadForm,111,27,84,"75,68"
+4/06/2026,Meta,Web,86,66,20,"23,26"
+3/06/2026,Google Demand Gen,Web,10,7,3,30
+3/06/2026,Google P Max,Web,48,37,11,"22,92"
+3/06/2026,Google Search,Web,43,37,6,"13,95"
+3/06/2026,Meta,LeadForm,130,27,103,"79,23"
+3/06/2026,Meta,Web,89,70,19,"21,35"
+2/06/2026,Google Demand Gen,Web,11,9,2,"18,18"
+2/06/2026,Google P Max,Web,39,31,8,"20,51"
+2/06/2026,Google Search,Web,40,35,5,"12,5"
+2/06/2026,Meta,LeadForm,142,35,107,"75,35"
+2/06/2026,Meta,Web,132,105,27,"20,45"
+1/06/2026,Google Demand Gen,Web,7,5,2,"28,57"
+1/06/2026,Google P Max,Web,53,42,11,"20,75"
+1/06/2026,Google Search,Web,45,33,12,"26,67"
+1/06/2026,Meta,LeadForm,142,37,105,"73,94"
+1/06/2026,Meta,Web,100,82,18,18
+31/05/2026,Google Demand Gen,Web,7,6,1,"14,29"
+31/05/2026,Google P Max,Web,33,28,5,"15,15"
+31/05/2026,Google Search,Web,25,21,4,16
+31/05/2026,Meta,LeadForm,36,11,25,"69,44"
+31/05/2026,Meta,Web,67,54,13,"19,4"
+30/05/2026,Google Demand Gen,Web,4,4,0,0
+30/05/2026,Google P Max,Web,27,22,5,"18,52"
+30/05/2026,Google Search,Web,25,22,3,12
+30/05/2026,Meta,LeadForm,32,5,27,"84,38"
+30/05/2026,Meta,Web,59,52,7,"11,86"
+29/05/2026,Google Demand Gen,Web,7,6,1,"14,29"
+29/05/2026,Google P Max,Web,30,25,5,"16,67"
+29/05/2026,Google Search,Web,27,24,3,"11,11"
+29/05/2026,Meta,LeadForm,89,26,63,"70,79"
+29/05/2026,Meta,Web,69,50,19,"27,54"
+28/05/2026,Google Demand Gen,Web,3,2,1,"33,33"
+28/05/2026,Google P Max,Web,29,25,4,"13,79"
+28/05/2026,Google Search,Web,33,30,3,"9,09"
+28/05/2026,Meta,LeadForm,139,38,101,"72,66"
+28/05/2026,Meta,Web,74,58,16,"21,62"
+27/05/2026,Google Demand Gen,Web,5,3,2,40
+27/05/2026,Google P Max,Web,25,20,5,20
+27/05/2026,Google Search,Web,39,33,6,"15,38"
+27/05/2026,Meta,LeadForm,137,25,112,"81,75"
+27/05/2026,Meta,Web,85,74,11,"12,94"
+26/05/2026,Google Demand Gen,Web,3,3,0,0
+26/05/2026,Google P Max,Web,30,22,8,"26,67"
+26/05/2026,Google Search,Web,56,49,7,"12,5"
+26/05/2026,Meta,LeadForm,99,23,76,"76,77"
+26/05/2026,Meta,Web,100,81,19,19
+25/05/2026,Google Demand Gen,Web,1,1,0,0
+25/05/2026,Google P Max,Web,54,38,16,"29,63"
+25/05/2026,Google Search,Web,52,45,7,"13,46"
+25/05/2026,Meta,LeadForm,127,48,79,"62,2"
+25/05/2026,Meta,Web,84,71,13,"15,48"
+24/05/2026,Google Demand Gen,Web,2,2,0,0
+24/05/2026,Google P Max,Web,45,33,12,"26,67"
+24/05/2026,Google Search,Web,28,24,4,"14,29"
+24/05/2026,Meta,LeadForm,28,14,14,50
+24/05/2026,Meta,Web,65,55,10,"15,38"
+23/05/2026,Google Demand Gen,Web,1,1,0,0
+23/05/2026,Google P Max,Web,49,25,24,"48,98"
+23/05/2026,Google Search,Web,27,25,2,"7,41"
+23/05/2026,Meta,LeadForm,28,5,23,"82,14"
+23/05/2026,Meta,Web,55,52,3,"5,45"
+22/05/2026,Google Demand Gen,Web,2,2,0,0
+22/05/2026,Google P Max,Web,45,37,8,"17,78"
+22/05/2026,Google Search,Web,34,29,5,"14,71"
+22/05/2026,Meta,LeadForm,66,20,46,"69,7"
+22/05/2026,Meta,Web,53,48,5,"9,43"
+21/05/2026,Google Demand Gen,Web,4,4,0,0
+21/05/2026,Google P Max,Web,44,36,8,"18,18"
+21/05/2026,Google Search,Web,44,42,2,"4,55"
+21/05/2026,Meta,LeadForm,145,44,101,"69,66"
+21/05/2026,Meta,Web,79,66,13,"16,46"
+20/05/2026,Google Demand Gen,Web,3,1,2,"66,67"
+20/05/2026,Google P Max,Web,49,33,16,"32,65"
+20/05/2026,Google Search,Web,47,41,6,"12,77"
+20/05/2026,Meta,LeadForm,131,46,85,"64,89"
+20/05/2026,Meta,Web,87,76,11,"12,64"
+19/05/2026,Google Demand Gen,Web,3,3,0,0
+19/05/2026,Google P Max,Web,52,35,17,"32,69"
+19/05/2026,Google Search,Web,61,57,4,"6,56"
+19/05/2026,Meta,LeadForm,109,43,66,"60,55"
+19/05/2026,Meta,Web,97,80,17,"17,53"
+18/05/2026,Google Demand Gen,Web,5,3,2,40
+18/05/2026,Google P Max,Web,59,49,10,"16,95"
+18/05/2026,Google Search,Web,64,58,6,"9,38"
+18/05/2026,Meta,LeadForm,128,41,87,"67,97"
+18/05/2026,Meta,Web,89,73,16,"17,98"
+17/05/2026,Google Demand Gen,Web,5,5,0,0
+17/05/2026,Google P Max,Web,67,43,24,"35,82"
+17/05/2026,Google Search,Web,45,39,6,"13,33"
+17/05/2026,Meta,LeadForm,31,8,23,"74,19"
+17/05/2026,Meta,Web,59,49,10,"16,95"
+16/05/2026,Google Demand Gen,Web,4,2,2,50
+16/05/2026,Google P Max,Web,50,34,16,32
+16/05/2026,Google Search,Web,32,27,5,"15,63"
+16/05/2026,Meta,LeadForm,27,13,14,"51,85"
+16/05/2026,Meta,Web,36,28,8,"22,22"
+15/05/2026,Google Demand Gen,Web,4,3,1,25
+15/05/2026,Google P Max,Web,39,25,14,"35,9"
+15/05/2026,Google Search,Web,44,37,7,"15,91"
+15/05/2026,Meta,LeadForm,65,26,39,60
+15/05/2026,Meta,Web,45,41,4,"8,89"
+14/05/2026,Google Demand Gen,Web,6,5,1,"16,67"
+14/05/2026,Google P Max,Web,50,38,12,24
+14/05/2026,Google Search,Web,46,35,11,"23,91"
+14/05/2026,Meta,LeadForm,77,26,51,"66,23"
+14/05/2026,Meta,Web,83,66,17,"20,48"
+13/05/2026,Google Demand Gen,Web,5,5,0,0
+13/05/2026,Google P Max,Web,31,24,7,"22,58"
+13/05/2026,Google Search,Web,52,44,8,"15,38"
+13/05/2026,Meta,LeadForm,130,44,86,"66,15"
+13/05/2026,Meta,Web,86,79,7,"8,14"
+12/05/2026,Google Demand Gen,Web,3,3,0,0
+12/05/2026,Google P Max,Web,56,44,12,"21,43"
+12/05/2026,Google Search,Web,63,54,9,"14,29"
+12/05/2026,Meta,LeadForm,96,30,66,"68,75"
+12/05/2026,Meta,Web,76,67,9,"11,84"
+11/05/2026,Google Demand Gen,Web,2,2,0,0
+11/05/2026,Google P Max,Web,54,40,14,"25,93"
+11/05/2026,Google Search,Web,50,39,11,22
+11/05/2026,Meta,LeadForm,127,49,78,"61,42"
+11/05/2026,Meta,Web,81,65,16,"19,75"
+10/05/2026,Google Demand Gen,Web,1,1,0,0
+10/05/2026,Google P Max,Web,38,29,9,"23,68"
+10/05/2026,Google Search,Web,26,26,0,0
+10/05/2026,Meta,LeadForm,43,10,33,"76,74"
+10/05/2026,Meta,Web,54,49,5,"9,26"
+9/05/2026,Google Demand Gen,Web,1,1,0,0
+9/05/2026,Google P Max,Web,38,32,6,"15,79"
+9/05/2026,Google Search,Web,51,45,6,"11,76"
+9/05/2026,Meta,LeadForm,47,11,36,"76,6"
+9/05/2026,Meta,Web,59,49,10,"16,95"
+8/05/2026,Google Demand Gen,Web,2,2,0,0
+8/05/2026,Google P Max,Web,36,28,8,"22,22"
+8/05/2026,Google Search,Web,31,29,2,"6,45"
+8/05/2026,Meta,LeadForm,86,18,68,"79,07"
+8/05/2026,Meta,Web,63,56,7,"11,11"
+7/05/2026,Google Demand Gen,Web,5,5,0,0
+7/05/2026,Google P Max,Web,42,37,5,"11,9"
+7/05/2026,Google Search,Web,33,27,6,"18,18"
+7/05/2026,Meta,LeadForm,139,28,111,"79,86"
+7/05/2026,Meta,Web,92,82,10,"10,87"
+6/05/2026,Google Demand Gen,Web,5,4,1,20
+6/05/2026,Google P Max,Web,53,46,7,"13,21"
+6/05/2026,Google Search,Web,47,42,5,"10,64"
+6/05/2026,Meta,LeadForm,139,36,103,"74,1"
+6/05/2026,Meta,Web,97,84,13,"13,4"
+5/05/2026,Google Demand Gen,Web,7,7,0,0
+5/05/2026,Google P Max,Web,70,56,14,20
+5/05/2026,Google Search,Web,54,47,7,"12,96"
+5/05/2026,Meta,LeadForm,156,34,122,"78,21"
+5/05/2026,Meta,Web,124,110,14,"11,29"
+4/05/2026,Google Demand Gen,Web,4,3,1,25
+4/05/2026,Google P Max,Web,41,29,12,"29,27"
+4/05/2026,Google Search,Web,48,44,4,"8,33"
+4/05/2026,Meta,LeadForm,143,40,103,"72,03"
+4/05/2026,Meta,Web,129,108,21,"16,28"
+3/05/2026,Google Demand Gen,Web,2,2,0,0
+3/05/2026,Google P Max,Web,34,27,7,"20,59"
+3/05/2026,Google Search,Web,33,32,1,"3,03"
+3/05/2026,Meta,LeadForm,55,13,42,"76,36"
+3/05/2026,Meta,Web,97,82,15,"15,46"
+2/05/2026,Google P Max,Web,27,23,4,"14,81"
+2/05/2026,Google Search,Web,30,27,3,10
+2/05/2026,Meta,LeadForm,42,13,29,"69,05"
+2/05/2026,Meta,Web,57,45,12,"21,05"
+1/05/2026,Google Demand Gen,Web,2,2,0,0
+1/05/2026,Google P Max,Web,38,34,4,"10,53"
+1/05/2026,Google Search,Web,24,23,1,"4,17"
+1/05/2026,Meta,LeadForm,58,10,48,"82,76"
+1/05/2026,Meta,Web,76,67,9,"11,84"
+30/04/2026,Google P Max,Web,43,31,12,"27,91"
+30/04/2026,Google Search,Web,26,23,3,"11,54"
+30/04/2026,Meta,LeadForm,99,24,75,"75,76"
+30/04/2026,Meta,Web,73,60,13,"17,81"
+29/04/2026,Google Demand Gen,Web,1,0,1,100
+29/04/2026,Google P Max,Web,39,34,5,"12,82"
+29/04/2026,Google Search,Web,57,45,12,"21,05"
+29/04/2026,Meta,LeadForm,114,52,62,"54,39"
+29/04/2026,Meta,Web,69,58,11,"15,94"
+28/04/2026,Google Demand Gen,Web,2,1,1,50
+28/04/2026,Google P Max,Web,24,19,5,"20,83"
+28/04/2026,Google Search,Web,48,45,3,"6,25"
+28/04/2026,Meta,LeadForm,117,34,83,"70,94"
+28/04/2026,Meta,Web,85,74,11,"12,94"
+27/04/2026,Google P Max,Web,39,31,8,"20,51"
+27/04/2026,Google Search,Web,46,40,6,"13,04"
+27/04/2026,Meta,LeadForm,112,33,79,"70,54"
+27/04/2026,Meta,Web,63,51,12,"19,05"
+26/04/2026,Google Demand Gen,Web,2,2,0,0
+26/04/2026,Google P Max,Web,32,26,6,"18,75"
+26/04/2026,Google Search,Web,35,26,9,"25,71"
+26/04/2026,Meta,LeadForm,41,13,28,"68,29"
+26/04/2026,Meta,Web,85,74,11,"12,94"
+25/04/2026,Google Demand Gen,Web,3,2,1,"33,33"
+25/04/2026,Google P Max,Web,32,25,7,"21,88"
+25/04/2026,Google Search,Web,22,19,3,"13,64"
+25/04/2026,Meta,LeadForm,36,9,27,75
+25/04/2026,Meta,Web,50,39,11,22
+24/04/2026,Google Demand Gen,Web,2,2,0,0
+24/04/2026,Google P Max,Web,31,26,5,"16,13"
+24/04/2026,Google Search,Web,37,33,4,"10,81"
+24/04/2026,Meta,LeadForm,125,40,85,68
+24/04/2026,Meta,Web,73,64,9,"12,33"
+23/04/2026,Google P Max,Web,36,29,7,"19,44"
+23/04/2026,Google Search,Web,46,34,12,"26,09"
+23/04/2026,Meta,LeadForm,120,42,78,65
+23/04/2026,Meta,Web,98,82,16,"16,33"
+22/04/2026,Google P Max,Web,31,29,2,"6,45"
+22/04/2026,Google Search,Web,56,51,5,"8,93"
+22/04/2026,Meta,LeadForm,112,36,76,"67,86"
+22/04/2026,Meta,Web,107,86,21,"19,63"
+21/04/2026,Google Demand Gen,Web,5,5,0,0
+21/04/2026,Google P Max,Web,42,38,4,"9,52"
+21/04/2026,Google Search,Web,47,43,4,"8,51"
+21/04/2026,Meta,LeadForm,164,53,111,"67,68"
+21/04/2026,Meta,Web,110,97,13,"11,82"
+20/04/2026,Google Demand Gen,Web,3,2,1,"33,33"
+20/04/2026,Google P Max,Web,34,33,1,"2,94"
+20/04/2026,Google Search,Web,52,42,10,"19,23"
+20/04/2026,Meta,LeadForm,170,51,119,70
+20/04/2026,Meta,Web,87,76,11,"12,64"
+19/04/2026,Google P Max,Web,29,20,9,"31,03"
+19/04/2026,Google Search,Web,43,35,8,"18,6"
+19/04/2026,Meta,LeadForm,23,10,13,"56,52"
+19/04/2026,Meta,Web,87,74,13,"14,94"
+18/04/2026,Google Demand Gen,Web,3,2,1,"33,33"
+18/04/2026,Google P Max,Web,32,24,8,25
+18/04/2026,Google Search,Web,34,31,3,"8,82"
+18/04/2026,Meta,LeadForm,18,7,11,"61,11"
+18/04/2026,Meta,Web,75,63,12,16
+17/04/2026,Google Demand Gen,Web,1,1,0,0
+17/04/2026,Google P Max,Web,38,25,13,"34,21"
+17/04/2026,Google Search,Web,52,44,8,"15,38"
+17/04/2026,Meta,LeadForm,87,29,58,"66,67"
+17/04/2026,Meta,Web,81,65,16,"19,75"
+16/04/2026,Google Demand Gen,Web,7,7,0,0
+16/04/2026,Google P Max,Web,30,24,6,20
+16/04/2026,Google Search,Web,46,35,11,"23,91"
+16/04/2026,Meta,LeadForm,136,49,87,"63,97"
+16/04/2026,Meta,Web,78,65,13,"16,67"
+15/04/2026,Google Demand Gen,Web,3,2,1,"33,33"
+15/04/2026,Google P Max,Web,34,29,5,"14,71"
+15/04/2026,Google Search,Web,48,38,10,"20,83"
+15/04/2026,Meta,LeadForm,149,47,102,"68,46"
+15/04/2026,Meta,Web,108,91,17,"15,74"
+14/04/2026,Google Demand Gen,Web,7,7,0,0
+14/04/2026,Google P Max,Web,51,34,17,"33,33"
+14/04/2026,Google Search,Web,62,57,5,"8,06"
+14/04/2026,Meta,LeadForm,124,33,91,"73,39"
+14/04/2026,Meta,Web,92,72,20,"21,74"
+13/04/2026,Google Demand Gen,Web,3,2,1,"33,33"
+13/04/2026,Google P Max,Web,98,46,52,"53,06"
+13/04/2026,Google Search,Web,89,77,12,"13,48"
+13/04/2026,Meta,LeadForm,169,49,120,"71,01"
+13/04/2026,Meta,Web,99,70,29,"29,29"
+12/04/2026,Google Demand Gen,Web,4,4,0,0
+12/04/2026,Google P Max,Web,60,37,23,"38,33"
+12/04/2026,Google Search,Web,30,25,5,"16,67"
+12/04/2026,Meta,LeadForm,36,13,23,"63,89"
+12/04/2026,Meta,Web,92,76,16,"17,39"
+11/04/2026,Google Demand Gen,Web,7,7,0,0
+11/04/2026,Google P Max,Web,90,40,50,"55,56"
+11/04/2026,Google Search,Web,35,29,6,"17,14"
+11/04/2026,Meta,LeadForm,46,21,25,"54,35"
+11/04/2026,Meta,Web,75,62,13,"17,33"
+10/04/2026,Google Demand Gen,Web,8,8,0,0
+10/04/2026,Google P Max,Web,96,44,52,"54,17"
+10/04/2026,Google Search,Web,43,41,2,"4,65"
+10/04/2026,Meta,LeadForm,91,30,61,"67,03"
+10/04/2026,Meta,Web,72,58,14,"19,44"
+9/04/2026,Google Demand Gen,Web,18,15,3,"16,67"
+9/04/2026,Google P Max,Web,107,60,47,"43,93"
+9/04/2026,Google Search,Web,68,61,7,"10,29"
+9/04/2026,Meta,LeadForm,143,46,97,"67,83"
+9/04/2026,Meta,Web,102,89,13,"12,75"
+8/04/2026,Google Demand Gen,Web,10,9,1,10
+8/04/2026,Google P Max,Web,143,50,93,"65,03"
+8/04/2026,Google Search,Web,49,42,7,"14,29"
+8/04/2026,Meta,LeadForm,149,44,105,"70,47"
+8/04/2026,Meta,Web,112,96,16,"14,29"
+7/04/2026,Google Demand Gen,Web,11,10,1,"9,09"
+7/04/2026,Google P Max,Web,131,57,74,"56,49"
+7/04/2026,Google Search,Web,58,50,8,"13,79"
+7/04/2026,Meta,LeadForm,121,35,86,"71,07"
+7/04/2026,Meta,Web,135,120,15,"11,11"
+6/04/2026,Google Demand Gen,Web,10,10,0,0
+6/04/2026,Google P Max,Web,122,57,65,"53,28"
+6/04/2026,Google Search,Web,71,61,10,"14,08"
+6/04/2026,Meta,LeadForm,121,31,90,"74,38"
+6/04/2026,Meta,Web,127,107,20,"15,75"
+5/04/2026,Google Demand Gen,Web,1,0,1,100
+5/04/2026,Google P Max,Web,131,47,84,"64,12"
+5/04/2026,Google Search,Web,39,35,4,"10,26"
+5/04/2026,Meta,LeadForm,35,8,27,"77,14"
+5/04/2026,Meta,Web,100,84,16,16
+4/04/2026,Google Demand Gen,Web,3,3,0,0
+4/04/2026,Google P Max,Web,126,56,70,"55,56"
+4/04/2026,Google Search,Web,43,35,8,"18,6"
+4/04/2026,Meta,LeadForm,39,12,27,"69,23"
+4/04/2026,Meta,Web,59,50,9,"15,25"
+3/04/2026,Google Demand Gen,Web,3,3,0,0
+3/04/2026,Google P Max,Web,108,38,70,"64,81"
+3/04/2026,Google Search,Web,18,16,2,"11,11"
+3/04/2026,Meta,LeadForm,42,16,26,"61,9"
+3/04/2026,Meta,Web,69,58,11,"15,94"
+2/04/2026,Google Demand Gen,Web,4,4,0,0
+2/04/2026,Google P Max,Web,105,39,66,"62,86"
+2/04/2026,Google Search,Web,29,19,10,"34,48"
+2/04/2026,Meta,LeadForm,43,11,32,"74,42"
+2/04/2026,Meta,Web,102,83,19,"18,63"
+1/04/2026,Google Demand Gen,Web,8,7,1,"12,5"
+1/04/2026,Google P Max,Web,90,55,35,"38,89"
+1/04/2026,Google Search,Web,31,29,2,"6,45"
+1/04/2026,Meta,LeadForm,103,33,70,"67,96"
+1/04/2026,Meta,Web,105,94,11,"10,48"

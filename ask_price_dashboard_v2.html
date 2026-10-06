@@ -38,6 +38,22 @@
         .data-table th { background: #f5f5f5; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
         .data-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
         .data-table tr:hover { background: #fafafa; }
+
+        /* Panel de impacto de ajustes de campaña */
+        .impacto-box { border: 1px solid #e2e8f0; border-left: 4px solid #6366f1;
+                       border-radius: 8px; padding: 16px 18px; margin-bottom: 16px; background: #fff; }
+        .impacto-box.ok   { border-left-color: #16a34a; }
+        .impacto-box.warn { border-left-color: #d97706; }
+        .impacto-box.bad  { border-left-color: #dc2626; }
+        .impacto-box.pendiente { border-left-color: #94a3b8; background: #f8fafc; }
+        .impacto-title { font-weight: 600; font-size: 15px; color: #222; margin-bottom: 12px; }
+        .impacto-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 10px; }
+        @media (max-width: 640px) { .impacto-grid { grid-template-columns: 1fr; } }
+        .impacto-label { display: block; font-size: 11px; text-transform: uppercase;
+                         letter-spacing: .5px; color: #64748b; margin-bottom: 4px; }
+        .impacto-num { display: block; font-size: 24px; font-weight: 700; color: #0f172a; line-height: 1.1; }
+        .impacto-sub { display: block; font-size: 12px; color: #64748b; margin-top: 2px; }
+        .impacto-text { font-size: 12px; color: #64748b; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -47,6 +63,7 @@
         
         <div id="status" class="status">Cargando datos...</div>
         <div id="alertsContainer"></div>
+        <div id="impactoContainer"></div>
         
         <div class="filters">
             <div class="filter-group">
@@ -70,7 +87,6 @@
                 <select id="sourceFilter" onchange="refreshDash()">
                     <option value="">Todas</option>
                     <option value="Web">Solo Web</option>
-                    <option value="LeadForm">Solo LeadForm</option>
                 </select>
             </div>
             
@@ -81,6 +97,7 @@
                     <label><input type="checkbox" value="Google Search" checked onchange="refreshDash()"> Google Search</label>
                     <label><input type="checkbox" value="Google P Max" checked onchange="refreshDash()"> Google P Max</label>
                     <label><input type="checkbox" value="Google Demand Gen" checked onchange="refreshDash()"> Google Demand Gen</label>
+                    <label><input type="checkbox" value="TikTok" checked onchange="refreshDash()"> TikTok</label>
                 </div>
             </div>
         </div>
@@ -129,7 +146,8 @@
             'Meta': '#1877f2',
             'Google Search': '#4285f4',
             'Google P Max': '#ea4335',
-            'Google Demand Gen': '#fbbc04'
+            'Google Demand Gen': '#fbbc04',
+            'TikTok': '#ff0050'
         };
         
         function parseCSV(csv) {
@@ -242,33 +260,187 @@
             refreshDash();
         }
         
-        function checkAlerts() {
-            const pmax = rawData.filter(r => r.canal === 'Google P Max').sort((a, b) => {
-                const [da, ma, ya] = a.fecha.split('/').map(Number);
-                const [db, mb, yb] = b.fecha.split('/').map(Number);
-                return new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da);
+        /* Dibuja sobre el chart de % sin ask price: las bandas de umbral
+           (10% / 20%) y una línea vertical por cada ajuste de campaña. */
+        const pluginMarcas = {
+            id: 'marcas',
+            afterDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea || !scales.y || !scales.x) return;
+
+                [[UMBRAL_OK, '#16a34a'], [UMBRAL_MAL, '#dc2626']].forEach(([valor, color]) => {
+                    const y = scales.y.getPixelForValue(valor);
+                    if (y < chartArea.top || y > chartArea.bottom) return;
+                    ctx.save();
+                    ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+                    ctx.beginPath(); ctx.moveTo(chartArea.left, y); ctx.lineTo(chartArea.right, y); ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = color; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+                    ctx.fillText(valor + '%', chartArea.left + 4, y - 3);
+                    ctx.restore();
+                });
+
+                EVENTOS.forEach(ev => {
+                    const corte = new Date(ev.fecha + 'T00:00:00');
+                    const idx = chart.data.labels.findIndex(l => fechaADate(l) >= corte);
+                    if (idx < 0) return;
+                    const x = scales.x.getPixelForValue(idx);
+                    ctx.save();
+                    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.setLineDash([6, 3]);
+                    ctx.beginPath(); ctx.moveTo(x, chartArea.top); ctx.lineTo(x, chartArea.bottom); ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+                    ctx.fillText('▼ ' + ev.label, x, chartArea.top - 3);
+                    ctx.restore();
+                });
+            }
+        };
+
+        /* ─────────────── Monitoreo de cambios de campaña ───────────────
+           Apunta aquí cada ajuste que quieras vigilar. El tablero dibuja una
+           línea vertical en el chart y calcula el antes/después automáticamente.
+           `canal` vacío = el evento aplica a todos los canales.              */
+        const EVENTOS = [
+            { fecha: '2026-08-25', canal: 'Google Demand Gen', label: 'Optimiza a evento ask_price' }
+        ];
+
+        // Criterio heredado del tablero PMax México: <10% objetivo, >20% fuera de control.
+        const UMBRAL_OK  = 10;
+        const UMBRAL_MAL = 20;
+        const VENTANA_COMPARA = 14;   // días antes del evento que se usan como línea base
+
+        // El CSV trae las fechas en dd/mm/yyyy.
+        function fechaADate(f) {
+            const [d, m, y] = String(f).split('/').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        // Agrega total y sin-precio en [ini, fin) para las filas dadas.
+        function agregar(filas, ini, fin) {
+            let total = 0, sin = 0;
+            filas.forEach(r => {
+                const d = fechaADate(r.fecha);
+                if (d >= ini && d < fin) {
+                    total += parseInt(r.total_leads) || 0;
+                    sin   += parseInt(r.leads_without_price) || 0;
+                }
             });
-            
+            return { total, sin, pct: total ? (100 * sin / total) : null };
+        }
+
+        function claseUmbral(pct) {
+            if (pct === null) return '';
+            if (pct < UMBRAL_OK)  return 'ok';
+            if (pct < UMBRAL_MAL) return 'warn';
+            return 'bad';
+        }
+
+        /* Panel de impacto: compara los 14 días previos al ajuste contra todo
+           lo ocurrido desde el ajuste. Es la lectura de "¿sirvió el cambio?". */
+        function renderImpacto() {
+            const cont = document.getElementById('impactoContainer');
+            if (!EVENTOS.length || !rawData.length) { cont.innerHTML = ''; return; }
+
             let html = '';
-            if (pmax.length >= 2) {
-                const last = parseFloat(pmax[0].pct_without_price) || 0;
-                const prev = parseFloat(pmax[1].pct_without_price) || 0;
-                
-                if (prev <= 25 && last >= 70) {
-                    html = `
-                        <div class="alert-box">
-                            <div class="alert-title">⚠️ ALERTA: Google P Max</div>
-                            <div class="alert-text">
-                                <strong>Aumento drástico detectado</strong><br>
-                                ${pmax[1].fecha}: ${prev}% → ${pmax[0].fecha}: ${last}%<br>
-                                <strong>Acción:</strong> Revisar landing page o formulario de P Max
+            EVENTOS.forEach(ev => {
+                const corte = new Date(ev.fecha + 'T00:00:00');
+                const inicio = new Date(corte.getTime() - VENTANA_COMPARA * 864e5);
+                const finFuturo = new Date(Date.now() + 864e5);
+                const filas = rawData.filter(r => !ev.canal || r.canal === ev.canal);
+
+                const antes   = agregar(filas, inicio, corte);
+                const despues = agregar(filas, corte, finFuturo);
+
+                if (despues.total === 0) {
+                    html += `
+                        <div class="impacto-box pendiente">
+                            <div class="impacto-title">⏳ ${ev.canal || 'Todos'} — ${ev.label}</div>
+                            <div class="impacto-text">
+                                Ajuste marcado el ${ev.fecha}. Todavía no hay datos posteriores
+                                para medirlo. Línea base de los ${VENTANA_COMPARA} días previos:
+                                <strong>${antes.pct === null ? 's/d' : antes.pct.toFixed(1) + '%'}</strong>
+                                sin ask price (${antes.sin} de ${antes.total}).
+                            </div>
+                        </div>`;
+                    return;
+                }
+
+                const delta = (antes.pct !== null && despues.pct !== null)
+                    ? (despues.pct - antes.pct) : null;
+                const signo = delta === null ? '' : (delta <= 0 ? '▼' : '▲');
+                const veredicto = delta === null ? 'Sin comparativo'
+                    : delta <= -5 ? 'Mejora clara'
+                    : delta <   0 ? 'Mejora leve'
+                    : delta <=  5 ? 'Sin cambio relevante'
+                    : 'Empeoró';
+
+                html += `
+                    <div class="impacto-box ${claseUmbral(despues.pct)}">
+                        <div class="impacto-title">📌 ${ev.canal || 'Todos los canales'} — ${ev.label} (${ev.fecha})</div>
+                        <div class="impacto-grid">
+                            <div>
+                                <span class="impacto-label">Antes · ${VENTANA_COMPARA}d previos</span>
+                                <span class="impacto-num">${antes.pct === null ? 's/d' : antes.pct.toFixed(1) + '%'}</span>
+                                <span class="impacto-sub">${antes.sin} de ${antes.total} leads</span>
+                            </div>
+                            <div>
+                                <span class="impacto-label">Después · desde el ajuste</span>
+                                <span class="impacto-num">${despues.pct === null ? 's/d' : despues.pct.toFixed(1) + '%'}</span>
+                                <span class="impacto-sub">${despues.sin} de ${despues.total} leads</span>
+                            </div>
+                            <div>
+                                <span class="impacto-label">Cambio</span>
+                                <span class="impacto-num">${delta === null ? '—' : signo + ' ' + Math.abs(delta).toFixed(1) + ' pts'}</span>
+                                <span class="impacto-sub">${veredicto}</span>
                             </div>
                         </div>
-                    `;
-                }
-            }
-            
+                        <div class="impacto-text">
+                            Objetivo &lt; ${UMBRAL_OK}% · fuera de control &gt; ${UMBRAL_MAL}%.
+                            Con pocos días desde el ajuste el dato todavía es ruidoso; mira la tendencia, no un solo día.
+                        </div>
+                    </div>`;
+            });
+            cont.innerHTML = html;
+        }
+
+        /* Alertas por canal: ya no solo P Max. Dispara si el canal está sobre el
+           umbral de descontrol, o si pega un salto contra su propia línea base. */
+        function checkAlerts() {
+            const canales = [...new Set(rawData.map(r => r.canal))];
+            const hoy = new Date();
+            const ini7  = new Date(hoy.getTime() -  7 * 864e5);
+            const ini28 = new Date(hoy.getTime() - 28 * 864e5);
+
+            let html = '';
+            canales.forEach(canal => {
+                const filas = rawData.filter(r => r.canal === canal);
+                const reciente = agregar(filas, ini7, new Date(hoy.getTime() + 864e5));
+                const base     = agregar(filas, ini28, ini7);
+
+                if (reciente.total < 10 || reciente.pct === null) return;   // muy poco volumen para concluir
+
+                const salto = (base.pct !== null) ? (reciente.pct - base.pct) : null;
+                const critico = reciente.pct >= UMBRAL_MAL;
+                const disparo = (salto !== null && salto >= 15);
+
+                if (!critico && !disparo) return;
+
+                html += `
+                    <div class="alert-box">
+                        <div class="alert-title">⚠️ ${canal} — ${reciente.pct.toFixed(0)}% sin ask price (últimos 7 días)</div>
+                        <div class="alert-text">
+                            ${reciente.sin} de ${reciente.total} leads llegaron sin precio.
+                            ${salto === null ? '' :
+                              `Línea base de los 21 días anteriores: <strong>${base.pct.toFixed(0)}%</strong>
+                               (${salto >= 0 ? '+' : ''}${salto.toFixed(0)} pts).`}
+                            <br><strong>Acción:</strong> revisar ubicaciones y segmentación en la plataforma;
+                            el dato de dónde se sirve el anuncio no está en BigQuery.
+                        </div>
+                    </div>`;
+            });
+
             document.getElementById('alertsContainer').innerHTML = html;
+            renderImpacto();
         }
         
         function refreshDash() {
@@ -347,6 +519,7 @@
             
             if (c1) c1.destroy();
             c1 = new Chart(document.getElementById('chart1'), {
+                plugins: [pluginMarcas],
                 type: 'line',
                 data: {
                     labels: dates,

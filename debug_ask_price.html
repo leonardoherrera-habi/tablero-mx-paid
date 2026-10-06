@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Price Debug</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #222; }
+        .debug { background: #f0f0f0; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-break: break-all; font-size: 12px; margin-top: 20px; }
+        .success { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .error { background: #ffebee; color: #c62828; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Ask Price Dashboard - Debug</h1>
+        <div id="log"></div>
+        <div id="debug" class="debug"></div>
+    </div>
+    
+    <script>
+        const log = [];
+        
+        function addLog(msg) {
+            log.push('[' + new Date().toLocaleTimeString() + '] ' + msg);
+            document.getElementById('log').innerHTML = log.map(m => 
+                m.includes('Error') || m.includes('❌') ? 
+                '<div class="error">' + m + '</div>' : 
+                '<div class="success">' + m + '</div>'
+            ).join('');
+        }
+        
+        async function test() {
+            addLog('Iniciando...');
+            
+            const sheetId = '1_lYIa34n-L4v2PNsEL3Vjx_5YLRQEJFWDRJ-6K-Fu1Y';
+            const gid = '204886809';
+            const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+            
+            addLog('URL: ' + url);
+            
+            try {
+                addLog('Descargando CSV...');
+                const response = await fetch(url);
+                addLog('Status: ' + response.status);
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                
+                const csv = await response.text();
+                addLog('CSV descargado: ' + csv.length + ' bytes');
+                
+                document.getElementById('debug').textContent = 'PRIMERAS 500 LÍNEAS:\n\n' + csv.substring(0, 500);
+                
+                const lines = csv.trim().split('\n');
+                addLog('Líneas: ' + lines.length);
+                addLog('Headers: ' + lines[0]);
+                addLog('Fila 1: ' + (lines[1] || 'vacía'));
+                
+                if (lines.length < 2) {
+                    addLog('❌ Sin datos en el CSV');
+                } else {
+                    addLog('✅ CSV cargado correctamente');
+                }
+                
+            } catch (error) {
+                addLog('❌ Error: ' + error.message);
+                document.getElementById('debug').textContent = error.stack;
+            }
+        }
+        
+        test();
+    </script>
+</body>
+</html>

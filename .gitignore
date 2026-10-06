@@ -1,0 +1,18 @@
+# Este repositorio publica con GitHub Pages: todo lo que entre es público.
+# En junio de 2026 quedaron tres archivos con credenciales sueltos en
+# .github/workflows/ y un `git add .` los habría publicado.
+
+# Credenciales y notas sueltas
+*.env
+.env
+.env.*
+*token*.txt
+*secret*.txt
+EAA*.txt
+.github/workflows/*.txt
+
+# Node
+node_modules/
+
+# Temporales de las consultas a BigQuery
+.bqtmp/
