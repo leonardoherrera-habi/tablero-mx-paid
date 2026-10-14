@@ -71,6 +71,12 @@ var SQL =
   // y la organizacion bloquea el scope de Drive para cuentas de servicio.
   // Es una sola campaña, asi que el LIKE basta y elimina esa dependencia.
   "  WHERE LOWER(COALESCE(g.campana_mercadeo,'')) LIKE '%hatgpt%'\n" +
+  // Lo organico de ChatGPT llega como utm_source 'chatgpt.com' (con el punto
+  // com) y SIN campaña, asi que el LIKE de arriba ya lo deja fuera. Esto es el
+  // segundo cerrojo: tendria que fallar en dos lugares a la vez para colarse.
+  // Se EXCLUYE lo organico en vez de EXIGIR utm_source='chatgpt' a proposito:
+  // exigirlo tiraria en silencio cualquier lead pagado que llegara sin fuente.
+  "    AND LOWER(COALESCE(g.utm_source,'')) <> 'chatgpt.com'\n" +
   "    AND LOWER(COALESCE(g.correo,'')) NOT LIKE '%@prueba%'\n" +
   // CAST porque nid es INT64 y la lista son cadenas.
   (NID_PRUEBA.length

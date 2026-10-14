@@ -260,7 +260,8 @@
     <table>
       <thead><tr>
         <th>Día</th><th>Inversión</th><th>Impr.</th><th>Clics</th><th>CTR</th><th>CPC</th>
-        <th>Registros</th><th>Calif.</th><th>Asign.</th><th>Citas</th><th>Cierres</th><th>CPL</th>
+        <th>Registros</th><th>Clic&rarr;Reg</th><th>Calif.</th><th>Asign.</th><th>Citas</th>
+        <th>Cierres</th><th>CPL</th><th>CPQL</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
       <tfoot id="tfoot"></tfoot>
@@ -617,24 +618,30 @@
   function renderTable(rows, t) {
     var z = function (v) { return v ? num(v) : '<span class="zero">0</span>'; };
     document.getElementById('tbody').innerHTML = rows.map(function (r) {
-      var cpl = div(r.spend, r.reg);
+      var cpl = div(r.spend, r.reg), cpql = div(r.spend, r.cal);
       return '<tr><td>' + esc(r.fecha) + '</td>' +
         '<td>' + din2(r.spend, r.spendUsd) + '</td>' +
         '<td>' + z(r.impr) + '</td><td>' + z(r.clicks) + '</td>' +
         '<td>' + (r.impr ? pct(r.clicks / r.impr * 100) : '—') + '</td>' +
         '<td>' + (div(r.spend, r.clicks) == null ? '—' : din2(div(r.spend, r.clicks), div(r.spendUsd, r.clicks))) + '</td>' +
-        '<td>' + z(r.reg) + '</td><td>' + z(r.cal) + '</td><td>' + z(r.asg) + '</td>' +
+        '<td>' + z(r.reg) + '</td>' +
+        '<td>' + (r.clicks ? pct(r.reg / r.clicks * 100) : '—') + '</td>' +
+        '<td>' + z(r.cal) + '</td><td>' + z(r.asg) + '</td>' +
         '<td>' + z(r.cit) + '</td><td>' + z(r.cie) + '</td>' +
-        '<td>' + (cpl == null ? '—' : din(cpl, div(r.spendUsd, r.reg))) + '</td></tr>';
-    }).join('') || '<tr><td colspan="12" class="empty">Sin datos en este periodo</td></tr>';
+        '<td>' + (cpl == null ? '—' : din(cpl, div(r.spendUsd, r.reg))) + '</td>' +
+        '<td>' + (cpql == null ? '—' : din(cpql, div(r.spendUsd, r.cal))) + '</td></tr>';
+    }).join('') || '<tr><td colspan="14" class="empty">Sin datos en este periodo</td></tr>';
 
     document.getElementById('tfoot').innerHTML = rows.length ? '<tr><td>Total</td>' +
       '<td>' + din2(t.spend, t.spendUsd) + '</td><td>' + num(t.impr) + '</td><td>' + num(t.clicks) + '</td>' +
       '<td>' + (t.impr ? pct(t.clicks / t.impr * 100) : '—') + '</td>' +
       '<td>' + (div(t.spend, t.clicks) == null ? '—' : din2(div(t.spend, t.clicks), div(t.spendUsd, t.clicks))) + '</td>' +
-      '<td>' + num(t.reg) + '</td><td>' + num(t.cal) + '</td><td>' + num(t.asg) + '</td>' +
+      '<td>' + num(t.reg) + '</td>' +
+      '<td>' + (t.clicks ? pct(t.reg / t.clicks * 100) : '—') + '</td>' +
+      '<td>' + num(t.cal) + '</td><td>' + num(t.asg) + '</td>' +
       '<td>' + num(t.cit) + '</td><td>' + num(t.cie) + '</td>' +
-      '<td>' + (div(t.spend, t.reg) == null ? '—' : din(div(t.spend, t.reg), div(t.spendUsd, t.reg))) + '</td></tr>' : '';
+      '<td>' + (div(t.spend, t.reg) == null ? '—' : din(div(t.spend, t.reg), div(t.spendUsd, t.reg))) + '</td>' +
+      '<td>' + (div(t.spend, t.cal) == null ? '—' : din(div(t.spend, t.cal), div(t.spendUsd, t.cal))) + '</td></tr>' : '';
   }
 
   function render() {
