@@ -261,7 +261,7 @@
       <thead><tr>
         <th>Día</th><th>Inversión</th><th>Impr.</th><th>Clics</th><th>CTR</th><th>CPC</th>
         <th>Registros</th><th>Clic&rarr;Reg</th><th>Calif.</th><th>Asign.</th><th>Citas</th>
-        <th>Cierres</th><th>CPL</th><th>CPQL</th>
+        <th>Cierres</th><th>CPL</th><th>CPQL</th><th>CPLA</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
       <tfoot id="tfoot"></tfoot>
@@ -546,6 +546,7 @@
     var cpl = div(t.spend, t.reg), cpc = div(t.spend, t.clicks);
     var cplU = div(t.spendUsd, t.reg), cpcU = div(t.spendUsd, t.clicks);
     var cpql = div(t.spend, t.cal), cpqlU = div(t.spendUsd, t.cal);
+    var cpla = div(t.spend, t.asg), cplaU = div(t.spendUsd, t.asg);
     var b = banda(cpqlU, t.cal);
     var items = [
       ['Inversión',   din(t.spend, t.spendUsd), null],
@@ -565,7 +566,11 @@
         b ? '<b>' + b.nombre + '</b>'
           : (!t.cal ? 'sin calificados'
                     : 'muestra insuficiente · ' + t.cal + ' de ' + MIN_CALIF + ' calificados'),
-        b ? b.clase : null]
+        b ? b.clase : null],
+      // Sin banda: los umbrales del benchmark son de CPQL, no de CPLA.
+      // Pintarle una banda prestada seria inventar un criterio que no existe.
+      ['CPLA', cpla == null ? '—' : din(cpla, cplaU),
+        t.asg ? 'costo por lead asignado' : 'sin asignados']
     ];
     document.getElementById('tiles').innerHTML = items.map(function (it) {
       var dim = (it[1] === '—' || it[1] === '0') ? ' dim' : '';
@@ -618,7 +623,7 @@
   function renderTable(rows, t) {
     var z = function (v) { return v ? num(v) : '<span class="zero">0</span>'; };
     document.getElementById('tbody').innerHTML = rows.map(function (r) {
-      var cpl = div(r.spend, r.reg), cpql = div(r.spend, r.cal);
+      var cpl = div(r.spend, r.reg), cpql = div(r.spend, r.cal), cpla = div(r.spend, r.asg);
       return '<tr><td>' + esc(r.fecha) + '</td>' +
         '<td>' + din2(r.spend, r.spendUsd) + '</td>' +
         '<td>' + z(r.impr) + '</td><td>' + z(r.clicks) + '</td>' +
@@ -629,8 +634,9 @@
         '<td>' + z(r.cal) + '</td><td>' + z(r.asg) + '</td>' +
         '<td>' + z(r.cit) + '</td><td>' + z(r.cie) + '</td>' +
         '<td>' + (cpl == null ? '—' : din(cpl, div(r.spendUsd, r.reg))) + '</td>' +
-        '<td>' + (cpql == null ? '—' : din(cpql, div(r.spendUsd, r.cal))) + '</td></tr>';
-    }).join('') || '<tr><td colspan="14" class="empty">Sin datos en este periodo</td></tr>';
+        '<td>' + (cpql == null ? '—' : din(cpql, div(r.spendUsd, r.cal))) + '</td>' +
+        '<td>' + (cpla == null ? '—' : din(cpla, div(r.spendUsd, r.asg))) + '</td></tr>';
+    }).join('') || '<tr><td colspan="15" class="empty">Sin datos en este periodo</td></tr>';
 
     document.getElementById('tfoot').innerHTML = rows.length ? '<tr><td>Total</td>' +
       '<td>' + din2(t.spend, t.spendUsd) + '</td><td>' + num(t.impr) + '</td><td>' + num(t.clicks) + '</td>' +
@@ -641,7 +647,8 @@
       '<td>' + num(t.cal) + '</td><td>' + num(t.asg) + '</td>' +
       '<td>' + num(t.cit) + '</td><td>' + num(t.cie) + '</td>' +
       '<td>' + (div(t.spend, t.reg) == null ? '—' : din(div(t.spend, t.reg), div(t.spendUsd, t.reg))) + '</td>' +
-      '<td>' + (div(t.spend, t.cal) == null ? '—' : din(div(t.spend, t.cal), div(t.spendUsd, t.cal))) + '</td></tr>' : '';
+      '<td>' + (div(t.spend, t.cal) == null ? '—' : din(div(t.spend, t.cal), div(t.spendUsd, t.cal))) + '</td>' +
+      '<td>' + (div(t.spend, t.asg) == null ? '—' : din(div(t.spend, t.asg), div(t.spendUsd, t.asg))) + '</td></tr>' : '';
   }
 
   function render() {
