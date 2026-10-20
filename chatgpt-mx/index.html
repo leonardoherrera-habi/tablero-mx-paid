@@ -528,6 +528,20 @@
     { canal: "Meta",                   cpql: 70.96, marca: "umbral: no exitoso" }
   ];
 
+  // CPLA real de cada canal, mismo periodo y misma consulta que el CPQL de
+  // arriba (`benchmark_cpla.sql`). Va SIN umbrales a proposito: los de CPQL
+  // estan anclados al mix y nadie ha definido los equivalentes para CPLA.
+  // Pintar un veredicto prestado seria inventar un criterio que no existe.
+  // La tabla sirve para ubicarse, no para aprobar ni reprobar.
+  var MIX_CPLA = [
+    { canal: "Google P Max",           cpla: 49.75, asig: "61,6% de los calificados" },
+    { canal: "Google Search genérica", cpla: 83.70, asig: "59,0%" },
+    { canal: "Promedio del mix",       cpla: 86.95, asig: "60,3%" },
+    { canal: "Google Demand Gen",      cpla: 87.60, asig: "66,2%" },
+    { canal: "Meta",                   cpla: 109.63, asig: "59,4%" },
+    { canal: "TikTok",                 cpla: 200.53, asig: "60,0%" }
+  ];
+
   function renderComp(t) {
     var cpqlU = div(t.spendUsd, t.cal);
     var b = banda(cpqlU, t.cal);
@@ -547,11 +561,31 @@
       '<td class="val">' + (cpqlU == null ? "—" : din(div(t.spend, t.cal), cpqlU)) + "</td>" +
       '<td class="marca">' + chip + "</td></tr>";
 
+    // --- la segunda tabla: CPLA, sin veredicto ---
+    var cplaU = div(t.spendUsd, t.asg);
+    var filasA = MIX_CPLA.map(function (m) {
+      return "<tr>" +
+        '<td class="canal">' + esc(m.canal) + "</td>" +
+        '<td class="val">' + din(m.cpla * FX_DEFAULT, m.cpla) + "</td>" +
+        '<td class="marca">' + esc(m.asig) + "</td></tr>";
+    }).join("");
+
+    var pctAsig = t.cal ? pct(t.asg / t.cal * 100) : "—";
+    filasA += '<tr class="yo">' +
+      '<td class="canal">ChatGPT Ads</td>' +
+      '<td class="val">' + (cplaU == null ? "—" : din(div(t.spend, t.asg), cplaU)) + "</td>" +
+      '<td class="marca">' + (t.asg ? pctAsig : "sin asignados") + "</td></tr>";
+
     document.getElementById("comp").innerHTML =
       "<h2>CPQL contra el mix mexicano</h2>" +
       '<div class="cap">Costo por lead calificado. Baseline WEB Paid de enero a agosto de 2026; ' +
       "ChatGPT es el periodo seleccionado arriba.</div>" +
-      "<table>" + filas + "</table>";
+      "<table>" + filas + "</table>" +
+      "<h2>CPLA contra el mix mexicano</h2>" +
+      '<div class="cap">Costo por lead asignado, y qué porcentaje de los calificados llega a ' +
+      "asignarse. Sin veredicto: los umbrales de arriba son de CPQL y nadie ha definido los " +
+      "de CPLA. Esta tabla es para ubicarse, no para aprobar ni reprobar.</div>" +
+      "<table>" + filasA + "</table>";
   }
 
   function renderTiles(t) {
