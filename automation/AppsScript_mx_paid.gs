@@ -67,7 +67,9 @@ var SQL = [
   // 1. Campaña paid -> fuente (match por mkt_campaign_name).
   "cmp_to_class AS (",
   "  SELECT cmp,",
-  "    ANY_VALUE(CASE big WHEN 'WEB' THEN 3 WHEN 'Estudio Inmueble' THEN 7",
+  // Brand cuenta como WEB, igual que la pestaña "MX Query $" del Planning
+  // oficial (sin esto, ~2 mil USD al mes de FB_HabiMarca caian en Otros).
+  "    ANY_VALUE(CASE big WHEN 'WEB' THEN 3 WHEN 'Brand' THEN 3 WHEN 'Estudio Inmueble' THEN 7",
   "                       WHEN 'Lead Forms' THEN 47 ELSE 0 END) AS fid,",
   "    ANY_VALUE(med) AS sub",
   "  FROM dict_raw WHERE cmp IS NOT NULL GROUP BY cmp",
@@ -94,6 +96,15 @@ var SQL = [
   "  FROM dict_raw WHERE utm IS NOT NULL GROUP BY utm",
   "),",
   "",
+  // Asignados con la definicion oficial de marketing (la del WBR y la del
+  // Planning). fecha_primer_asignacion de la TIG cuenta cualquier asignacion y
+  // en WEB inflaba ~50%: cohorte 1-20 oct 2026, 2,244 contra 1,462.
+  "asignados_wbr AS (",
+  "  SELECT DISTINCT nid",
+  "  FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`",
+  "  WHERE pais = 'mexico'",
+  "),",
+  "",
   // 4. Funnel por cohorte de creacion. Misma reasignacion de fuente y
   // sub-fuente que query.sql (logica de Camilo).
   "funnel_agg AS (",
@@ -103,7 +114,8 @@ var SQL = [
   "      WHEN d.channel_big = 'WEB' THEN 3",
   "      WHEN d.channel_big = 'Estudio Inmueble' THEN 7",
   "      WHEN d.channel_big = 'Lead Forms' THEN 47",
-  "      WHEN d.channel_big IN ('Brand', 'Propiedades') THEN 0",
+  "      WHEN d.channel_big = 'Brand' THEN 3",
+  "      WHEN d.channel_big = 'Propiedades' THEN 0",
   "      ELSE t.fuente_id",
   "    END AS fid,",
   "    d.pl AS pl,",
@@ -117,11 +129,12 @@ var SQL = [
   "    END AS sub,",
   "    COUNT(DISTINCT t.nid) AS cre,",
   "    COUNTIF(t.fecha_primer_calificacion IS NOT NULL) AS cal,",
-  "    COUNTIF(t.fecha_primer_asignacion IS NOT NULL) AS asg,",
+  "    COUNTIF(m.nid IS NOT NULL) AS asg,",
   "    COUNTIF(t.fecha_cita_agendada IS NOT NULL) AS cit,",
   "    COUNTIF(t.fecha_cierre IS NOT NULL) AS cie",
   "  FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` t",
   "  LEFT JOIN dict d ON d.utm = t.campana_mercadeo",
+  "  LEFT JOIN asignados_wbr m ON m.nid = t.nid",
   "  WHERE t.fecha_creacion IS NOT NULL",
   "    AND DATE(t.fecha_creacion) >= " + DESDE + " AND DATE(t.fecha_creacion) < " + HOY,
   "    AND t.fuente_id IN (3, 7, 47)",

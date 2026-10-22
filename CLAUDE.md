@@ -54,6 +54,14 @@ de 8 h. Instalación en el encabezado del `.gs`. Hasta que se llenen `SHEET_ID` 
 desactualizado. **Revisa siempre la frescura del pipeline antes de dudar de los
 datos.**
 
+Desde el 21-oct-2026 los **asignados salen del WBR mart**
+(`sellers_leads_asignados_marketing_wbr_mart`), no de `fecha_primer_asignacion`
+de la TIG, que cuenta cualquier asignación e inflaba WEB ~50%. Brand cuenta como
+WEB. Así cuadra con el Planning 2026 Oficial de Camilo (pestañas "MX Query
+Leads", "MX Query $", "MX Motor"; ojo: "MX Inversion" es inversión en miles de
+MXN, no asignados): la inversión cuadra al dólar; los asignados difieren poco
+porque aquí van por cohorte de creación y allá por fecha de asignación.
+
 El `data.json` viejo usaba otro universo de leads: el 10-jun-2026 traía 335
 creados, contra 414 (fuentes 3 + 7 + 47) de la lógica de `query.sql`, que es la
 que usa ahora el tablero. La inversión sí cuadra al centavo.
