@@ -123,7 +123,7 @@
 
 <main>
   <p style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.7;">
-    México · Cohorte por fecha de creación del lead, cruzado con inversión paid media (Google, Facebook, Bing) vía UTM dict <code style="background:var(--surface);padding:1px 5px;border-radius:3px;">registro_unico_utm_mkt_mexico</code>. Día actual excluido.
+    México · Cohorte por fecha de creación del lead, cruzado con inversión paid media (Google, Facebook, Bing, TikTok, ChatGPT) vía UTM dict <code style="background:var(--surface);padding:1px 5px;border-radius:3px;">registro_unico_utm_mkt_mexico</code>. Últimos ~13 meses; día actual excluido (corte en hora de México). <strong style="color:var(--text);">Inversión y costos en USD.</strong>
     <strong style="color:var(--text);">Atribución alineada con tablero de Camilo Otoya (llave: <code style="background:var(--surface);padding:1px 5px;border-radius:3px;">mkt_channel_big</code>):</strong>
     tanto leads como spend se reasignan a Web / EI / LF / Otros según el canal nativo de cada campaña. Si la <code style="background:var(--surface);padding:1px 5px;border-radius:3px;">campana_mercadeo</code> es nula o no matchea, se mantiene el <code style="background:var(--surface);padding:1px 5px;border-radius:3px;">fuente_id</code> original.
   </p>
@@ -155,9 +155,9 @@
       <label>Fuente</label>
       <select id="f-fuente" onchange="applyFilters()">
         <option value="">Todas</option>
-        <option value="Web">WEB</option>
-        <option value="LF">LF</option>
-        <option value="EI">Estudio Inm.</option>
+        <option value="WEB">WEB</option>
+        <option value="Lead Forms">LF</option>
+        <option value="Estudio Inmueble">Estudio Inm.</option>
         <option value="Otros">Otros</option>
       </select>
     </div>
@@ -165,9 +165,11 @@
       <label>Plataforma</label>
       <select id="f-plat" onchange="applyFilters()">
         <option value="">Todas</option>
-        <option value="google">Google</option>
-        <option value="facebook">Facebook</option>
-        <option value="bing">Bing</option>
+        <option value="Google">Google</option>
+        <option value="Facebook">Facebook</option>
+        <option value="Bing">Bing</option>
+        <option value="TikTok">TikTok</option>
+        <option value="ChatGPT">ChatGPT</option>
       </select>
     </div>
     <div class="filter-group">
@@ -181,8 +183,8 @@
 
   <!-- No data warning (hidden by default) -->
   <div class="no-data-banner" id="no-data-banner" style="display:none">
-    <strong>⚠ Sin datos disponibles</strong>
-    El archivo <code>data.json</code> aún no ha sido generado. Configura la automatización con GitHub Actions para que los datos se actualicen diariamente desde BigQuery.
+    <strong id="no-data-title">⚠ Sin datos disponibles</strong>
+    <span id="no-data-msg">No se pudo leer la hoja del tablero ni el respaldo <code>data.json</code>.</span>
   </div>
 
   <!-- Sección 1: Volumen -->
@@ -228,7 +230,7 @@
         <thead>
           <tr>
             <th onclick="sortTable('t-costos',0)">Periodo<span class="sort-icon"></span></th>
-            <th onclick="sortTable('t-costos',1)">Inversión<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-costos',1)">Inversión (USD)<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-costos',2)">CPM<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-costos',3)">CPC (clk)<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-costos',4)">CP Lead<span class="sort-icon"></span></th>
@@ -255,7 +257,7 @@
           <tr>
             <th onclick="sortTable('t-fuente',0)">Fuente<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-fuente',1)">Sub-fuente<span class="sort-icon"></span></th>
-            <th onclick="sortTable('t-fuente',2)">Inversión<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-fuente',2)">Inversión (USD)<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-fuente',3)">Creados<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-fuente',4)">Calificados<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-fuente',5)">Asignados<span class="sort-icon"></span></th>
@@ -286,7 +288,7 @@
             <th onclick="sortTable('t-gran',1)">Sub-fuente<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-gran',2)">Plataforma<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-gran',3)">Campaña<span class="sort-icon"></span></th>
-            <th onclick="sortTable('t-gran',4)">Inversión<span class="sort-icon"></span></th>
+            <th onclick="sortTable('t-gran',4)">Inversión (USD)<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-gran',5)">Impr.<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-gran',6)">Clicks<span class="sort-icon"></span></th>
             <th onclick="sortTable('t-gran',7)">Creados<span class="sort-icon"></span></th>
@@ -600,33 +602,127 @@ function toggleTheme() {
 }
 
 // ─── Load data ─────────────────────────────────────────────────────────────────
-async function loadData() {
-  try {
-    const res = await fetch('data.json?_=' + Date.now());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
-    // BigQuery devuelve todos los valores como strings — convertir a número
-    const NUM_FIELDS = ['creados','calificados','asignados','cita_agendada','cierres','inversion','impressions','clicks'];
-    RAW_DATA = (json.data || []).map(r => {
-      const row = Object.assign({}, r);
-      NUM_FIELDS.forEach(k => { if (row[k] != null) row[k] = parseFloat(row[k]) || 0; });
-      return row;
-    });
+// Fuente principal: hoja de Google que llena automation/AppsScript_mx_paid.gs
+// cada 3 horas. Respaldo: data.json (congelado desde el 13-jun-2026), sólo si la
+// hoja no responde. Con SHEET_ID vacío se usa directo data.json.
+const SHEET_ID  = '18y7MAizfvsO7Pwy7SlBSBmSY1BHCoRpwYmoHMzUQKSs';   // hoja "Tablero MX Paid - datos"
+const GID_DATA  = '0';           // pestaña `data`
+const GID_META  = '1939293891';  // pestaña `meta`
+const HORAS_VIEJO = 8;  // con disparador cada 3 h, más de 8 h sin actualizar es una falla
 
-    const ts = json.generado_utc ? new Date(json.generado_utc).toLocaleString('es-MX', {timeZone:'America/Mexico_City', day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-    document.getElementById('last-update').textContent = `Actualizado: ${ts} MX · ${(RAW_DATA.length).toLocaleString()} registros`;
-    document.getElementById('last-update-header').textContent = `Actualizado ${ts} MX`;
+const NUM_FIELDS = ['creados','calificados','asignados','cita_agendada','cierres','inversion','impressions','clicks'];
 
-    populateCampanias();
-    applyFilters();
-  } catch(e) {
-    document.getElementById('last-update').textContent = 'Sin datos · configura build_data.py';
-    document.getElementById('no-data-banner').style.display = 'block';
-    ['tb-volumen','tb-costos','tb-fuente','tb-gran'].forEach((id, i) => {
-      const cols = [15,9,12,16][i];
-      document.getElementById(id).innerHTML = emptyRow(cols);
-    });
+// Una hoja con configuración regional de México exporta "0,86" en vez de 0.86, y
+// parseFloat("0,86") da 0 sin avisar. Regla: el último separador es el decimal.
+function toNum(v) {
+  if (typeof v === 'number') return v;
+  let s = String(v == null ? '' : v).trim();
+  if (!s) return 0;
+  const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
+  if (lc > ld) s = s.replace(/\./g, '').replace(',', '.');
+  else s = s.replace(/,/g, '');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function toNumbers(rows) {
+  return rows.map(r => {
+    const row = Object.assign({}, r);
+    NUM_FIELDS.forEach(k => { row[k] = toNum(row[k]); });
+    return row;
+  });
+}
+
+// CSV → arreglo de objetos. Respeta comillas, comas y saltos dentro de campos
+// (hay nombres de campaña con comas).
+function parseCSV(text) {
+  const rows = []; let row = []; let field = ''; let q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else q = false; }
+      else field += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i+1] === '\n') i++;
+      row.push(field); rows.push(row); row = []; field = '';
+    } else field += c;
   }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  const head = rows.shift() || [];
+  return rows.filter(r => r.length > 1 || r[0]).map(r => Object.fromEntries(head.map((h, i) => [h, r[i]])));
+}
+
+async function fetchCSV(gid) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 30000);
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}&_=${Date.now()}`;
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    // Si la hoja no es pública, Google devuelve la página de login en HTML.
+    if (/^\s*</.test(text)) throw new Error('la hoja no es pública');
+    return text;
+  } finally { clearTimeout(t); }
+}
+
+async function loadFromSheet() {
+  const [dataTxt, metaTxt] = await Promise.all([fetchCSV(GID_DATA), GID_META ? fetchCSV(GID_META) : Promise.resolve('')]);
+  const rows = parseCSV(dataTxt);
+  if (!rows.length || !rows[0].fecha) throw new Error('la hoja no trae filas con fecha');
+  const meta = {};
+  metaTxt.split(/\r?\n/).forEach(l => { const [k, ...v] = l.split(','); if (k) meta[k] = v.join(','); });
+  return { rows, generado_utc: meta.generado_utc || null, origen: 'hoja' };
+}
+
+async function loadFromJSON() {
+  const res = await fetch('data.json?_=' + Date.now());
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  return { rows: json.data || [], generado_utc: json.generado_utc || null, origen: 'data.json' };
+}
+
+function setBanner(title, msg) {
+  document.getElementById('no-data-title').textContent = title;
+  document.getElementById('no-data-msg').textContent = msg;
+  document.getElementById('no-data-banner').style.display = 'block';
+}
+
+async function loadData() {
+  let src = null, errHoja = null;
+  if (SHEET_ID) {
+    try { src = await loadFromSheet(); } catch (e) { errHoja = e; }
+  }
+  try {
+    if (!src) src = await loadFromJSON();
+  } catch (e) {
+    document.getElementById('last-update').textContent = 'Sin datos';
+    setBanner('⚠ Sin datos disponibles', 'No se pudo leer la hoja del tablero' + (errHoja ? ` (${errHoja.message})` : '') + ' ni el respaldo data.json.');
+    ['tb-volumen','tb-costos','tb-fuente','tb-gran'].forEach((id, i) => {
+      document.getElementById(id).innerHTML = emptyRow([15,9,12,16][i]);
+    });
+    return;
+  }
+
+  RAW_DATA = toNumbers(src.rows);
+  const gen = src.generado_utc ? new Date(src.generado_utc) : null;
+  const ts = gen ? gen.toLocaleString('es-MX', {timeZone:'America/Mexico_City', day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+  document.getElementById('last-update').textContent = `Actualizado: ${ts} MX · ${(RAW_DATA.length).toLocaleString()} registros · fuente: ${src.origen}`;
+  document.getElementById('last-update-header').textContent = `Actualizado ${ts} MX`;
+
+  // Que el tablero nunca muestre datos viejos sin decirlo: así se veía "normal"
+  // mientras estuvo congelado desde junio.
+  const horas = gen ? (Date.now() - gen.getTime()) / 36e5 : Infinity;
+  if (errHoja) {
+    setBanner('⚠ Mostrando datos de respaldo', `La hoja del tablero no respondió (${errHoja.message}). Estos son los datos de data.json, actualizados por última vez el ${ts}.`);
+  } else if (horas > HORAS_VIEJO) {
+    setBanner('⚠ Datos desactualizados', `La última actualización fue el ${ts} (hace ${Math.round(horas / 24 * 10) / 10} días). Revisa las ejecuciones del Apps Script del tablero.`);
+  }
+
+  populateCampanias();
+  applyFilters();
 }
 
 document.addEventListener('DOMContentLoaded', loadData);

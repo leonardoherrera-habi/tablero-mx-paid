@@ -11,7 +11,7 @@ del repositorio.
 
 | tablero | archivo | estado |
 |---|---|---|
-| MX Paid Media | `index.html` + `data.json` | **congelado desde el 13-jun-2026** |
+| MX Paid Media | `index.html` + hoja de Google (respaldo: `data.json`) | migrado a Apps Script el 21-oct-2026; vivo cuando la hoja esté instalada (ver abajo) |
 | ChatGPT Ads MX | `chatgpt-mx/index.html` | vivo, se actualiza solo cada 3 h |
 | Ask Price | `ask_price_dashboard_v2.html` | vivo, lee una hoja cada 5 min |
 
@@ -42,16 +42,24 @@ falta.
 
 ## Pendientes conocidos
 
-**El tablero de MX Paid lleva congelado desde el 13 de junio de 2026.** Su
-`data.json` no se actualiza: el GitHub Action dejó de correr y `refresh.js`
-nunca llegó a commitear (su formato de mensaje no aparece en el historial). Esto
-ha hecho parecer varias veces que campañas nuevas "no están cayendo" cuando en
-BigQuery estaban perfectas. **Revisa siempre la frescura del pipeline antes de
-dudar de los datos.**
+**El tablero de MX Paid estuvo congelado del 13-jun al 21-oct-2026.** El GitHub
+Action sólo copiaba un `data.json` que otro proceso (fuera de este repo) dejaba en
+Drive, y ese proceso dejó de correr. Se migró a
+`automation/AppsScript_mx_paid.gs`: lee el diccionario UTM directo de la hoja
+(SpreadsheetApp) y se lo pasa a BigQuery como parámetro JSON, así que ya no
+depende de la tabla externa sobre Sheets ni del scope de Drive. Escribe la hoja
+cada 3 h; `index.html` la lee por CSV y avisa en pantalla si los datos tienen más
+de 8 h. Instalación en el encabezado del `.gs`. Hasta que se llenen `SHEET_ID` y
+`GID_META` en `index.html`, el tablero cae al `data.json` viejo y lo marca como
+desactualizado. **Revisa siempre la frescura del pipeline antes de dudar de los
+datos.**
 
-**Google no reporta inversión desde el 1 de septiembre de 2026** en
-`resumen_inversiones_mkt_mx` — cero filas, no filas en cero. Coincide con la
-revocación de accesos de ciberseguridad de ese día.
+El `data.json` viejo usaba otro universo de leads: el 10-jun-2026 traía 335
+creados, contra 414 (fuentes 3 + 7 + 47) de la lógica de `query.sql`, que es la
+que usa ahora el tablero. La inversión sí cuadra al centavo.
+
+~~Google no reporta inversión desde el 1 de septiembre de 2026.~~ Resuelto: al
+21-oct-2026 `resumen_inversiones_mkt_mx` trae Google hasta el día anterior.
 
 **Falta integrar SAC** al tablero de MX Paid. Las campañas con `-org-sac-` en
 `campana_mercadeo` dejaron de etiquetarse el 25 de agosto de 2026.
