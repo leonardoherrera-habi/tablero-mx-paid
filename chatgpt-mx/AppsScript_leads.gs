@@ -49,24 +49,29 @@ var SQL =
   "WITH dias AS (\n" +
   "  SELECT d FROM UNNEST(GENERATE_DATE_ARRAY(DATE '" + INICIO + "', CURRENT_DATE('America/Mexico_City'))) AS d\n" +
   "),\n" +
+  // Cada etapa se cuenta el dia en que ocurrio, como el WBR y el tablero MX
+  // Paid (acordado el 26-oct-2026). Antes todo iba por dia de creacion del lead.
   "cierres AS (\n" +
-  "  SELECT nid\n" +
+  "  SELECT nid, MIN(DATE(fecha)) AS d\n" +
   "  FROM `sellers-main-prod.bi_mx.seguimiento_funnel_mex`\n" +
   "  WHERE valor = 'Cierre - Comprado'\n" +
-  "  QUALIFY ROW_NUMBER() OVER(PARTITION BY nid ORDER BY fecha DESC) = 1\n" +
+  "  GROUP BY nid\n" +
   "),\n" +
-  "leads AS (\n" +
-  "  SELECT\n" +
-  "    DATE(g.fecha_creacion) AS dia,\n" +
-  "    COUNT(DISTINCT g.nid)                                AS registros,\n" +
-  "    COUNTIF(g.fecha_primer_calificacion IS NOT NULL)     AS calificados,\n" +
-  "    COUNT(DISTINCT IF(asi.nid IS NOT NULL, g.nid, NULL)) AS asignados,\n" +
-  "    COUNTIF(g.fecha_cita_agendada IS NOT NULL)           AS citas,\n" +
-  "    COUNT(DISTINCT IF(c.nid IS NOT NULL, g.nid, NULL))   AS cierres\n" +
+  "asignados AS (\n" +
+  "  SELECT nid, MIN(CAST(dia AS DATE)) AS d\n" +
+  "  FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`\n" +
+  "  WHERE pais = 'mexico'\n" +
+  "  GROUP BY nid\n" +
+  "),\n" +
+  "eventos AS (\n" +
+  "  SELECT e.etapa, e.d\n" +
   "  FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` g\n" +
-  "  LEFT JOIN `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart` asi\n" +
-  "    ON g.nid = asi.nid\n" +
-  "  LEFT JOIN cierres c ON g.nid = c.nid\n" +
+  "  LEFT JOIN asignados asi ON g.nid = asi.nid\n" +
+  "  LEFT JOIN cierres c ON g.nid = c.nid,\n" +
+  "  UNNEST([\n" +
+  "    STRUCT('reg' AS etapa, DATE(g.fecha_creacion) AS d),\n" +
+  "    ('cal', DATE(g.fecha_primer_calificacion)), ('asg', asi.d),\n" +
+  "    ('cit', DATE(g.fecha_cita_agendada)), ('cie', c.d)]) AS e\n" +
   // Sin JOIN al diccionario UTM a proposito: es una tabla externa sobre Sheets
   // y la organizacion bloquea el scope de Drive para cuentas de servicio.
   // Es una sola campaña, asi que el LIKE basta y elimina esa dependencia.
@@ -82,6 +87,14 @@ var SQL =
   (NID_PRUEBA.length
      ? "    AND CAST(g.nid AS STRING) NOT IN ('" + NID_PRUEBA.join("','") + "')\n"
      : "") +
+  "    AND e.d IS NOT NULL\n" +
+  "),\n" +
+  "leads AS (\n" +
+  "  SELECT d AS dia,\n" +
+  "    COUNTIF(etapa = 'reg') AS registros, COUNTIF(etapa = 'cal') AS calificados,\n" +
+  "    COUNTIF(etapa = 'asg') AS asignados, COUNTIF(etapa = 'cit') AS citas,\n" +
+  "    COUNTIF(etapa = 'cie') AS cierres\n" +
+  "  FROM eventos\n" +
   "  GROUP BY 1\n" +
   ")\n" +
   "SELECT\n" +

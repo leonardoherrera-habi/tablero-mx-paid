@@ -33,6 +33,9 @@
 
 var PROJECT_ID = 'papyrus-data-mx';
 
+// Hoja "Tablero MX Paid - datos", la que lee index.html.
+var TABLERO_SHEET_ID = '18y7MAizfvsO7Pwy7SlBSBmSY1BHCoRpwYmoHMzUQKSs';
+
 // Diccionario UTM de Mexico. Es la misma hoja que respalda la tabla externa
 // registro_unico_utm_mkt_mexico (pestaña MX).
 var DICT_SHEET_ID = '1sBg4hIBzWDTfZhORtr-HtVIfxvnILmJqCqfzuk1Jpxk';
@@ -96,19 +99,40 @@ var SQL = [
   "  FROM dict_raw WHERE utm IS NOT NULL GROUP BY utm",
   "),",
   "",
-  // Asignados con la definicion oficial de marketing (la del WBR y la del
-  // Planning). fecha_primer_asignacion de la TIG cuenta cualquier asignacion y
-  // en WEB inflaba ~50%: cohorte 1-20 oct 2026, 2,244 contra 1,462.
+  // Cada etapa se cuenta el dia en que ocurrio, como el WBR y el Planning de
+  // Camilo (acordado con Leonardo el 26-oct-2026). Antes todo iba por cohorte
+  // de creacion y las semanas recientes se veian casi sin cierres: el lead
+  // tarda ~49 dias de mediana de calificar a cerrar.
+  //
+  // Fuentes oficiales, no las fechas de la TIG:
+  //  - asignados: WBR mart. fecha_primer_asignacion de la TIG cuenta cualquier
+  //    asignacion y en WEB inflaba ~50% (1-20 oct 2026: 2,244 contra 1,462).
+  //  - cierres: seguimiento_funnel_mex 'Cierre - Comprado'. fecha_cierre de la
+  //    TIG trae de mas (WEB, semana del 19-oct: 33 contra 23).
   "asignados_wbr AS (",
-  "  SELECT DISTINCT nid",
+  "  SELECT nid, MIN(CAST(dia AS DATE)) AS d",
   "  FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`",
   "  WHERE pais = 'mexico'",
+  "  GROUP BY nid",
   "),",
   "",
-  // 4. Funnel por cohorte de creacion. Misma reasignacion de fuente y
-  // sub-fuente que query.sql (logica de Camilo).
-  "funnel_agg AS (",
-  "  SELECT DATE(t.fecha_creacion) AS d,",
+  "cierres AS (",
+  "  SELECT nid, MIN(DATE(fecha)) AS d",
+  "  FROM `sellers-main-prod.bi_mx.seguimiento_funnel_mex`",
+  "  WHERE valor = 'Cierre - Comprado'",
+  "  GROUP BY nid",
+  "),",
+  "",
+  // 4. Clasificacion del lead: misma reasignacion de fuente y sub-fuente que
+  // query.sql (logica de Camilo). Sin filtro de fecha de creacion: un lead
+  // viejo puede cerrar dentro de la ventana.
+  "leads AS (",
+  "  SELECT t.nid,",
+  "    DATE(t.fecha_creacion) AS d_cre,",
+  "    DATE(t.fecha_primer_calificacion) AS d_cal,",
+  "    m.d AS d_asg,",
+  "    DATE(t.fecha_cita_agendada) AS d_cit,",
+  "    c.d AS d_cie,",
   "    CASE",
   "      WHEN t.campana_mercadeo IS NULL OR t.campana_mercadeo IN ('', 'xxxxx') THEN t.fuente_id",
   "      WHEN d.channel_big = 'WEB' THEN 3",
@@ -126,19 +150,33 @@ var SQL = [
   "                         WHEN 7 THEN 'Estudio Inmueble Direct' ELSE 'Otros' END",
   "      WHEN d.channel_medium IS NULL OR d.channel_medium = '' THEN t.campana_mercadeo",
   "      ELSE d.channel_medium",
-  "    END AS sub,",
-  "    COUNT(DISTINCT t.nid) AS cre,",
-  "    COUNTIF(t.fecha_primer_calificacion IS NOT NULL) AS cal,",
-  "    COUNTIF(m.nid IS NOT NULL) AS asg,",
-  "    COUNTIF(t.fecha_cita_agendada IS NOT NULL) AS cit,",
-  "    COUNTIF(t.fecha_cierre IS NOT NULL) AS cie",
+  "    END AS sub",
   "  FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` t",
   "  LEFT JOIN dict d ON d.utm = t.campana_mercadeo",
   "  LEFT JOIN asignados_wbr m ON m.nid = t.nid",
+  "  LEFT JOIN cierres c ON c.nid = t.nid",
   "  WHERE t.fecha_creacion IS NOT NULL",
-  "    AND DATE(t.fecha_creacion) >= " + DESDE + " AND DATE(t.fecha_creacion) < " + HOY,
   "    AND t.fuente_id IN (3, 7, 47)",
   "    AND t.nid IS NOT NULL",
+  // La TIG deberia traer un nid por fila; esto evita contar doble si no.
+  "  QUALIFY ROW_NUMBER() OVER (PARTITION BY t.nid) = 1",
+  "),",
+  "",
+  // 5. Un evento por etapa, cada uno en su propia fecha.
+  "eventos AS (",
+  "  SELECT fid, pl, cmp, sub, e.etapa, e.d",
+  "  FROM leads, UNNEST([",
+  "    STRUCT('cre' AS etapa, d_cre AS d), ('cal', d_cal), ('asg', d_asg),",
+  "    ('cit', d_cit), ('cie', d_cie)]) AS e",
+  "  WHERE e.d >= " + DESDE + " AND e.d < " + HOY,
+  "),",
+  "",
+  "funnel_agg AS (",
+  "  SELECT d, fid, pl, cmp, sub,",
+  "    COUNTIF(etapa = 'cre') AS cre, COUNTIF(etapa = 'cal') AS cal,",
+  "    COUNTIF(etapa = 'asg') AS asg, COUNTIF(etapa = 'cit') AS cit,",
+  "    COUNTIF(etapa = 'cie') AS cie",
+  "  FROM eventos",
   "  GROUP BY d, fid, pl, cmp, sub",
   "),",
   "",
@@ -182,7 +220,10 @@ function actualizarTablero() {
     throw new Error('BigQuery devolvio solo ' + filas.length + ' filas — no se toca la hoja.');
   }
 
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  // Por ID y no getActiveSpreadsheet(): el 26-oct-2026 una corrida fallo con
+  // "No se encontro la hoja 1086648177", un gid que no existe en esta hoja.
+  // Abrirla por ID no depende de a que archivo quedo pegado el script.
+  var ss = SpreadsheetApp.openById(TABLERO_SHEET_ID);
   // Con configuracion regional de Mexico la hoja exporta "0,86" en el CSV y el
   // tablero leeria 0. En_US exporta 0.86. (index.html tambien tolera la coma.)
   if (ss.getSpreadsheetLocale() !== 'en_US') ss.setSpreadsheetLocale('en_US');

@@ -59,8 +59,16 @@ Desde el 21-oct-2026 los **asignados salen del WBR mart**
 de la TIG, que cuenta cualquier asignación e inflaba WEB ~50%. Brand cuenta como
 WEB. Así cuadra con el Planning 2026 Oficial de Camilo (pestañas "MX Query
 Leads", "MX Query $", "MX Motor"; ojo: "MX Inversion" es inversión en miles de
-MXN, no asignados): la inversión cuadra al dólar; los asignados difieren poco
-porque aquí van por cohorte de creación y allá por fecha de asignación.
+MXN, no asignados): la inversión cuadra al dólar.
+
+Desde el 26-oct-2026 **los dos tableros (MX Paid y ChatGPT) cuentan cada etapa
+el día en que ocurrió**, como el WBR: creados por fecha de creación, calificados
+por `fecha_primer_calificacion`, asignados por el `dia` del mart, citas por
+`fecha_cita_agendada` y cierres por la fecha de `seguimiento_funnel_mex`
+('Cierre - Comprado'), no por `fecha_cierre` de la TIG. Cada evento conserva el
+canal y la campaña del lead. Por eso un cociente del mismo día (calificados ÷
+creados) ya no es la conversión exacta de esos leads. Antes todo iba por cohorte
+de creación y las semanas recientes salían casi sin cierres.
 
 El `data.json` viejo usaba otro universo de leads: el 10-jun-2026 traía 335
 creados, contra 414 (fuentes 3 + 7 + 47) de la lógica de `query.sql`, que es la
