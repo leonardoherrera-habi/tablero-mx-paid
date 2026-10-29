@@ -279,11 +279,15 @@
     un factor de tres según caiga el siguiente lead, y un color rojo ahí diría más de lo que el
     dato sabe.<br>
     <b>Umbrales del CPQL</b> (siempre en dólares, aunque veas pesos): altamente exitoso por debajo
-    de US$51, que le gana al promedio del mix mexicano; esperado entre US$51 y US$71, el rango de
-    Demand Gen y Meta; no exitoso por encima de US$71, peor que Meta.
+    de US$72, que le gana al promedio del mix mexicano; esperado entre US$72 y US$91, el rango de
+    Demand Gen y Meta; no exitoso por encima de US$91, peor que Meta.
     Vienen del baseline de enero a agosto de 2026 y sustituyen al objetivo de US$25 del documento
     original, que comparaba contra Search y P Max — captura de intención, no generación de demanda.<br>
-    <b>El CPQL de Search se corrigió el 20 de octubre de 2026</b>, de US$18,43 a US$49,36. El
+    <b>Calificado = el lead llegó a pricing</b>, igual que Marketing NEW y el tablero MX, desde el
+    29 de octubre de 2026. Antes contaba <code>fecha_primer_calificacion</code>, que da cerca de 40% más
+    calificados. El benchmark y los umbrales se recalcularon con la misma regla (antes: US$51 y US$71),
+    así que la comparación sigue siendo pareja.<br>
+    <b>El CPQL de Search se corrigió el 20 de octubre de 2026</b>, de US$18,43 a US$49,36 (con la definición de calificado de entonces). El
     número viejo dividía el gasto genérico entre todos los leads de Search, los de marca
     incluidos — y los de marca son más. Calculado parejo, genérico contra genérico, Search no
     es la ganga que parecía: queda a la altura de Demand Gen.<br>
@@ -489,13 +493,17 @@
   }
 
   // Matriz de evaluacion acordada el 15-sep-2026. Los umbrales estan anclados
-  // al CPQL real de canales del propio mix mexicano, enero-agosto 2026:
-  //   promedio del mix $50,74  ·  Meta $70,96
+  // al CPQL real de canales del propio mix mexicano, enero-agosto 2026.
+  // Recalculada el 29-oct-2026 cuando "calificado" paso a ser "llego a pricing"
+  // (fecha_a_pricing, la definicion de Marketing NEW de Camilo). Con la misma
+  // regla para el canal y para el mix, la comparacion sigue siendo pareja:
+  //   promedio del mix $72,37  ·  Meta $90,67
+  // (con la definicion anterior, fecha_primer_calificacion, eran 50,74 y 70,96).
   // Se evaluan SIEMPRE sobre el valor en dolares, aunque el tablero muestre
   // pesos: mover el selector de moneda no puede cambiar el veredicto.
   var BANDAS = [
-    { max: 51,       nombre: "Altamente exitoso", clase: "b-ok"   },
-    { max: 71,       nombre: "Esperado",          clase: "b-warn" },
+    { max: 72,       nombre: "Altamente exitoso", clase: "b-ok"   },
+    { max: 91,       nombre: "Esperado",          clase: "b-warn" },
     { max: Infinity, nombre: "No exitoso",        clase: "b-bad"  }
   ];
   // Minimo de calificados antes de emitir un veredicto. Con uno o dos, el
@@ -520,12 +528,18 @@
   // de la marca, y hacia ver a Search 2.7 veces mejor de lo que es.
   // Calculado parejo, generico contra generico, da 49.36.
   // La consulta esta en `benchmark_cpla.sql`.
+  //
+  // Valores con calificado = llego a pricing (29-oct-2026). La misma consulta
+  // con la definicion vieja reproduce los publicados antes (P Max 30.64,
+  // Search 49.36, Demand Gen 58.00), asi que el metodo es el mismo; solo Meta
+  // (65.08 contra 70.96) y el mix (52.43 contra 50.74) salian de otro calculo.
+  // El mix incluye TikTok, igual que el CPLA de abajo.
   var MIX = [
-    { canal: "Google P Max",           cpql: 30.67, marca: "umbral: altamente exitoso" },
-    { canal: "Google Search genérica", cpql: 49.36 },
-    { canal: "Promedio del mix",       cpql: 50.74, marca: "umbral: esperado" },
-    { canal: "Google Demand Gen",      cpql: 58.00 },
-    { canal: "Meta",                   cpql: 70.96, marca: "umbral: no exitoso" }
+    { canal: "Google P Max",           cpql: 41.72, marca: "umbral: altamente exitoso" },
+    { canal: "Google Search genérica", cpql: 68.06 },
+    { canal: "Promedio del mix",       cpql: 72.37, marca: "umbral: esperado" },
+    { canal: "Google Demand Gen",      cpql: 79.19 },
+    { canal: "Meta",                   cpql: 90.67, marca: "umbral: no exitoso" }
   ];
 
   // CPLA real de cada canal, mismo periodo y misma consulta que el CPQL de

@@ -73,7 +73,8 @@ leads AS (
       ELSE 'Otros'
     END AS canal,
     COUNT(DISTINCT t.nid)                                     AS registros,
-    COUNTIF(t.fecha_primer_calificacion IS NOT NULL)          AS calificados,
+    -- Calificado = llego a pricing (definicion de Camilo desde el 29-oct-2026).
+    COUNTIF(t.fecha_a_pricing IS NOT NULL)                    AS calificados,
     COUNT(DISTINCT IF(a.nid IS NOT NULL, t.nid, NULL))        AS asignados
   FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` t
   LEFT JOIN `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart` a

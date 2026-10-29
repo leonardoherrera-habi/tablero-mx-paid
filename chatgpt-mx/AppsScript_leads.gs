@@ -51,6 +51,8 @@ var SQL =
   "),\n" +
   // Cada etapa se cuenta el dia en que ocurrio, como el WBR y el tablero MX
   // Paid (acordado el 26-oct-2026). Antes todo iba por dia de creacion del lead.
+  // Calificado = llego a pricing (fecha_a_pricing), como Marketing NEW de Camilo
+  // (29-oct-2026). fecha_primer_calificacion contaba ~40% mas.
   "cierres AS (\n" +
   "  SELECT nid, MIN(DATE(fecha)) AS d\n" +
   "  FROM `sellers-main-prod.bi_mx.seguimiento_funnel_mex`\n" +
@@ -70,7 +72,7 @@ var SQL =
   "  LEFT JOIN cierres c ON g.nid = c.nid,\n" +
   "  UNNEST([\n" +
   "    STRUCT('reg' AS etapa, DATE(g.fecha_creacion) AS d),\n" +
-  "    ('cal', DATE(g.fecha_primer_calificacion)), ('asg', asi.d),\n" +
+  "    ('cal', DATE(g.fecha_a_pricing)), ('asg', asi.d),\n" +
   "    ('cit', DATE(g.fecha_cita_agendada)), ('cie', c.d)]) AS e\n" +
   // Sin JOIN al diccionario UTM a proposito: es una tabla externa sobre Sheets
   // y la organizacion bloquea el scope de Drive para cuentas de servicio.
