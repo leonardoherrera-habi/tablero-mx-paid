@@ -62,7 +62,7 @@ MXN, no asignados): la inversión cuadra al dólar.
 
 Desde el 26-oct-2026 **los dos tableros (MX Paid y ChatGPT) cuentan cada etapa
 el día en que ocurrió**, como el WBR: creados por fecha de creación, calificados
-por `fecha_primer_calificacion`, asignados por el `dia` del mart, citas por
+por `fecha_a_pricing` (llegó a pricing; así cuenta Camilo, cuadra exacto), asignados por el `dia` del mart, citas por
 `fecha_cita_agendada` y cierres por la fecha de `seguimiento_funnel_mex`
 ('Cierre - Comprado'), no por `fecha_cierre` de la TIG. Cada evento conserva el
 canal y la campaña del lead. Por eso un cociente del mismo día (calificados ÷

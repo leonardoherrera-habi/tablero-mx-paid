@@ -166,7 +166,10 @@ var SQL = [
   "leads AS (",
   "  SELECT t.nid,",
   "    DATE(t.fecha_creacion) AS d_cre,",
-  "    DATE(t.fecha_primer_calificacion) AS d_cal,",
+  // Calificado = el lead llega a pricing, como "MX Mes Actual" de Marketing
+  // NEW (cuadra exacto dia por dia, 1-12 sep 2026). fecha_primer_calificacion
+  // marca otra cosa y daba casi el doble.
+  "    DATE(t.fecha_a_pricing) AS d_cal,",
   "    m.d AS d_asg,",
   "    DATE(t.fecha_cita_agendada) AS d_cit,",
   "    c.d AS d_cie,",
