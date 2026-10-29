@@ -45,9 +45,19 @@ var DICT_TAB = 'MX';
 // crezca sin limite.
 var DIAS_HISTORIA = 400;
 
-var COLUMNAS = ['fecha', 'canal', 'sub_canal', 'plataforma', 'campana',
+var COLUMNAS = ['fecha', 'segmento', 'sub_canal', 'plataforma', 'campana', 'medio',
                 'creados', 'calificados', 'asignados', 'cita_agendada', 'cierres',
                 'inversion', 'impressions', 'clicks'];
+var N_TEXTO = 6;  // las primeras 6 columnas son texto; el resto, numeros
+
+// Planning 2026 Oficial de Camilo Otoya. De ahi salen las metas de asignados
+// ("MX Fuentes"), las de inversion ("MX Inversion") y el tipo de cambio diario
+// ("TRM"), para que el tablero las tome solas si Camilo las ajusta.
+var PLANNING_SHEET_ID = '1lBAh2SUOkx5XD5UD20KvQglNzwLJkjWlqkvp2Qw5FgY';
+// Secciones del Planning que usa el tablero. Las de ciclos y las diarias se
+// dejan fuera a proposito, para no cargar el informe.
+var SECCIONES_META = { 'Anuales': 'anual', 'Trimestrales': 'trimestral',
+                       'Mensuales': 'mensual', 'Semanales': 'semanal' };
 
 // Corte en fecha de Mexico, no UTC: corriendo de noche, UTC ya seria mañana y
 // colaria el dia en curso, que viene incompleto.
@@ -63,40 +73,66 @@ var SQL = [
   "    NULLIF(JSON_VALUE(x, '$.cmp'), '') AS cmp,",
   "    NULLIF(JSON_VALUE(x, '$.big'), '') AS big,",
   "    NULLIF(JSON_VALUE(x, '$.med'), '') AS med,",
-  "    NULLIF(JSON_VALUE(x, '$.pl'),  '') AS pl",
+  "    NULLIF(JSON_VALUE(x, '$.pl'),  '') AS pl,",
+  "    NULLIF(JSON_VALUE(x, '$.media'), '') AS media",
   "  FROM UNNEST(JSON_QUERY_ARRAY(@dict)) AS x",
   "),",
   "",
-  // 1. Campaña paid -> fuente (match por mkt_campaign_name).
+  // SEGMENTOS (los bloques del tablero, como "MX Mes Actual" de Marketing NEW):
+  // Brand y Marketing Loop van aparte (decision de Leonardo, 26-oct-2026):
+  // Brand no busca generar leads y su inversion inflaba WEB Paid; Loop son
+  // leads viejos reactivados, no adquisicion paid.
+  //
+  // 1. Campaña paid -> segmento de inversion (match por mkt_campaign_name). Si
+  // no esta en el diccionario, el mismo respaldo que "MX Query $" del Planning:
+  // canal_adquisicion y despues el nombre de la campaña.
   "cmp_to_class AS (",
   "  SELECT cmp,",
-  // Brand cuenta como WEB, igual que la pestaña "MX Query $" del Planning
-  // oficial (sin esto, ~2 mil USD al mes de FB_HabiMarca caian en Otros).
-  "    ANY_VALUE(CASE big WHEN 'WEB' THEN 3 WHEN 'Brand' THEN 3 WHEN 'Estudio Inmueble' THEN 7",
-  "                       WHEN 'Lead Forms' THEN 47 ELSE 0 END) AS fid,",
+  "    ANY_VALUE(CASE big WHEN 'WEB' THEN 'WEB Paid' WHEN 'Brand' THEN 'Brand'",
+  "      WHEN 'Estudio Inmueble' THEN 'Habímetro Paid' WHEN 'Lead Forms' THEN 'Lead Forms'",
+  "      WHEN 'Propiedades' THEN 'Propiedades' END) AS seg,",
   "    ANY_VALUE(med) AS sub",
   "  FROM dict_raw WHERE cmp IS NOT NULL GROUP BY cmp",
   "),",
   "",
   // 2. Inversion. Todas las plataformas de la tabla (todas en USD; ChatGPT ya
-  // entra convertido). El data.json anterior tambien traia TikTok.
+  // entra convertido).
   "spend_agg AS (",
   "  SELECT i.date AS d, i.plataforma AS pl,",
   "    COALESCE(NULLIF(i.campana_original, ''), NULLIF(i.campana, ''), '(sin campaña)') AS cmp,",
-  "    COALESCE(c.fid, 0) AS fid,",
+  "    CASE",
+  "      WHEN LOWER(i.campana_original) LIKE '%reinteresados%' THEN 'Marketing Loop'",
+  "      WHEN c.seg IS NOT NULL THEN c.seg",
+  "      WHEN i.canal_adquisicion = 'Habimetro' THEN 'Habímetro Paid'",
+  "      WHEN i.canal_adquisicion = 'Lead Form' THEN 'Lead Forms'",
+  "      WHEN i.canal_adquisicion = 'Web' THEN 'WEB Paid'",
+  "      WHEN REGEXP_CONTAINS(LOWER(i.campana_original), r'habimetro|hmt|(^|[_-])hm([_-]|$)') THEN 'Habímetro Paid'",
+  "      WHEN REGEXP_CONTAINS(LOWER(i.campana_original), r'lead ?ads|lead ?form|lfr') THEN 'Lead Forms'",
+  "      WHEN REGEXP_CONTAINS(LOWER(i.campana_original), r'habiweb|_sem_|performance_max|conversion|youtube|^tuh-mex-sel-') THEN 'WEB Paid'",
+  "      ELSE 'Otros'",
+  "    END AS seg,",
   "    COALESCE(NULLIF(c.sub, ''), 'Sin sub-fuente') AS sub,",
+  "    'Paid' AS medio,",
   "    SUM(i.impressions) AS imp, SUM(i.clicks) AS clk, SUM(i.spend) AS spend",
   "  FROM `papyrus-data-mx.habi_wh_bi.resumen_inversiones_mkt_mx` i",
   "  LEFT JOIN cmp_to_class c ON c.cmp = i.campana_original",
   "  WHERE i.date >= " + DESDE + " AND i.date < " + HOY,
-  "  GROUP BY d, pl, cmp, fid, sub",
+  "  GROUP BY d, pl, cmp, seg, sub, medio",
   "),",
   "",
   // 3. Diccionario para enriquecer leads (match por campana_mercadeo_original).
   "dict AS (",
   "  SELECT utm, ANY_VALUE(pl) AS pl, ANY_VALUE(cmp) AS cmp,",
-  "    ANY_VALUE(big) AS channel_big, ANY_VALUE(med) AS channel_medium",
+  "    ANY_VALUE(big) AS channel_big, ANY_VALUE(med) AS channel_medium,",
+  "    ANY_VALUE(media) AS media",
   "  FROM dict_raw WHERE utm IS NOT NULL GROUP BY utm",
+  "),",
+  "",
+  // Marketing Loop con la misma regla que "MX Query Leads" del Planning.
+  "loop_nids AS (",
+  "  SELECT DISTINCT SAFE_CAST(nid AS INT64) AS nid",
+  "  FROM `sellers-main-prod.hubspot.deals`",
+  "  WHERE country = 'México' AND utm_campaign LIKE '%reinteresados%'",
   "),",
   "",
   // Cada etapa se cuenta el dia en que ocurrio, como el WBR y el Planning de
@@ -123,9 +159,10 @@ var SQL = [
   "  GROUP BY nid",
   "),",
   "",
-  // 4. Clasificacion del lead: misma reasignacion de fuente y sub-fuente que
-  // query.sql (logica de Camilo). Sin filtro de fecha de creacion: un lead
-  // viejo puede cerrar dentro de la ventana.
+  // 4. Clasificacion del lead en su segmento. Misma reasignacion de fuente que
+  // query.sql (llave mkt_channel_big del diccionario) y la regla de Paid del
+  // Planning: mkt_media = 'Paid' o mkt_channel_medium termina en " Paid". Sin
+  // filtro de fecha de creacion: un lead viejo puede cerrar dentro de la ventana.
   "leads AS (",
   "  SELECT t.nid,",
   "    DATE(t.fecha_creacion) AS d_cre,",
@@ -134,14 +171,20 @@ var SQL = [
   "    DATE(t.fecha_cita_agendada) AS d_cit,",
   "    c.d AS d_cie,",
   "    CASE",
-  "      WHEN t.campana_mercadeo IS NULL OR t.campana_mercadeo IN ('', 'xxxxx') THEN t.fuente_id",
-  "      WHEN d.channel_big = 'WEB' THEN 3",
-  "      WHEN d.channel_big = 'Estudio Inmueble' THEN 7",
-  "      WHEN d.channel_big = 'Lead Forms' THEN 47",
-  "      WHEN d.channel_big = 'Brand' THEN 3",
-  "      WHEN d.channel_big = 'Propiedades' THEN 0",
-  "      ELSE t.fuente_id",
-  "    END AS fid,",
+  "      WHEN lp.nid IS NOT NULL THEN 'Marketing Loop'",
+  "      WHEN d.channel_big = 'Brand' THEN 'Brand'",
+  "      WHEN d.channel_big = 'Propiedades' THEN 'Propiedades'",
+  "      WHEN f.fid = 3  THEN IF(f.es_paid, 'WEB Paid', 'WEB Direct')",
+  "      WHEN f.fid = 7  THEN IF(f.es_paid, 'Habímetro Paid', 'Habímetro Direct')",
+  "      WHEN f.fid = 47 THEN 'Lead Forms'",
+  "      WHEN f.fid = 39 THEN 'Brokers'",
+  "      WHEN f.fid = 35 THEN 'Comercial'",
+  "      WHEN f.fid = 46 THEN 'Propiedades'",
+  "      ELSE 'Otros'",
+  "    END AS seg,",
+  // Lead Forms es paid por definicion (como "Leadforms Paid" del Planning),
+  // aunque el lead no traiga campaña.
+  "    IF(f.es_paid OR f.fid = 47 OR d.channel_big = 'Brand', 'Paid', 'Orgánico') AS medio,",
   "    d.pl AS pl,",
   "    COALESCE(d.cmp, '(sin campaña)') AS cmp,",
   "    CASE",
@@ -155,8 +198,21 @@ var SQL = [
   "  LEFT JOIN dict d ON d.utm = t.campana_mercadeo",
   "  LEFT JOIN asignados_wbr m ON m.nid = t.nid",
   "  LEFT JOIN cierres c ON c.nid = t.nid",
+  "  LEFT JOIN loop_nids lp ON lp.nid = t.nid",
+  "  CROSS JOIN UNNEST([STRUCT(",
+  "    CASE",
+  "      WHEN t.campana_mercadeo IS NULL OR t.campana_mercadeo IN ('', 'xxxxx') THEN t.fuente_id",
+  "      WHEN d.channel_big = 'WEB' THEN 3",
+  "      WHEN d.channel_big = 'Estudio Inmueble' THEN 7",
+  "      WHEN d.channel_big = 'Lead Forms' THEN 47",
+  "      ELSE t.fuente_id",
+  "    END AS fid,",
+  "    COALESCE(d.media = 'Paid' OR d.channel_medium LIKE '% Paid', FALSE) AS es_paid",
+  "  )]) AS f",
   "  WHERE t.fecha_creacion IS NOT NULL",
-  "    AND t.fuente_id IN (3, 7, 47)",
+  // Las mismas fuentes que suma el TOTAL de "MX Fuentes" del Planning: WEB,
+  // Habimetro, Lead Forms, Comercial, Brokers y Propiedades.
+  "    AND t.fuente_id IN (3, 7, 47, 35, 39, 46)",
   "    AND t.nid IS NOT NULL",
   // La TIG deberia traer un nid por fila; esto evita contar doble si no.
   "  QUALIFY ROW_NUMBER() OVER (PARTITION BY t.nid) = 1",
@@ -164,7 +220,7 @@ var SQL = [
   "",
   // 5. Un evento por etapa, cada uno en su propia fecha.
   "eventos AS (",
-  "  SELECT fid, pl, cmp, sub, e.etapa, e.d",
+  "  SELECT seg, medio, pl, cmp, sub, e.etapa, e.d",
   "  FROM leads, UNNEST([",
   "    STRUCT('cre' AS etapa, d_cre AS d), ('cal', d_cal), ('asg', d_asg),",
   "    ('cit', d_cit), ('cie', d_cie)]) AS e",
@@ -172,25 +228,25 @@ var SQL = [
   "),",
   "",
   "funnel_agg AS (",
-  "  SELECT d, fid, pl, cmp, sub,",
+  "  SELECT d, seg, medio, pl, cmp, sub,",
   "    COUNTIF(etapa = 'cre') AS cre, COUNTIF(etapa = 'cal') AS cal,",
   "    COUNTIF(etapa = 'asg') AS asg, COUNTIF(etapa = 'cit') AS cit,",
   "    COUNTIF(etapa = 'cie') AS cie",
   "  FROM eventos",
-  "  GROUP BY d, fid, pl, cmp, sub",
+  "  GROUP BY d, seg, medio, pl, cmp, sub",
   "),",
   "",
   "unido AS (",
-  "  SELECT d, fid, pl, cmp, sub, imp, clk, spend, 0 AS cre, 0 AS cal, 0 AS asg, 0 AS cit, 0 AS cie FROM spend_agg",
+  "  SELECT d, seg, medio, pl, cmp, sub, imp, clk, spend, 0 AS cre, 0 AS cal, 0 AS asg, 0 AS cit, 0 AS cie FROM spend_agg",
   "  UNION ALL",
-  "  SELECT d, fid, pl, cmp, sub, 0, 0, 0.0, cre, cal, asg, cit, cie FROM funnel_agg",
+  "  SELECT d, seg, medio, pl, cmp, sub, 0, 0, 0.0, cre, cal, asg, cit, cie FROM funnel_agg",
   ")",
   "",
-  // 5. Salida con la forma exacta que espera index.html. Una fila por llave:
-  // inversion y funnel de la misma campaña y dia quedan juntos.
+  // 6. Salida con la forma que espera index.html (ver COLUMNAS). Una fila por
+  // llave: inversion y funnel de la misma campaña y dia quedan juntos.
   "SELECT",
   "  FORMAT_DATE('%Y-%m-%d', d) AS fecha,",
-  "  CASE fid WHEN 3 THEN 'WEB' WHEN 7 THEN 'Estudio Inmueble' WHEN 47 THEN 'Lead Forms' ELSE 'Otros' END AS canal,",
+  "  seg AS segmento,",
   "  sub AS sub_canal,",
   // Normaliza mayusculas: el diccionario y la tabla de inversion escriben
   // distinto la misma plataforma (google / Google).
@@ -199,14 +255,15 @@ var SQL = [
   "    WHEN 'bing' THEN 'Bing' WHEN 'tiktok' THEN 'TikTok' WHEN 'chatgpt' THEN 'ChatGPT'",
   "    ELSE pl END AS plataforma,",
   "  cmp AS campana,",
+  "  medio,",
   "  SUM(cre) AS creados, SUM(cal) AS calificados, SUM(asg) AS asignados,",
   "  SUM(cit) AS cita_agendada, SUM(cie) AS cierres,",
   "  ROUND(SUM(IFNULL(spend, 0)), 2) AS inversion,",
   "  CAST(SUM(IFNULL(imp, 0)) AS INT64) AS impressions,",
   "  CAST(SUM(IFNULL(clk, 0)) AS INT64) AS clicks",
   "FROM unido",
-  "GROUP BY 1, 2, 3, 4, 5",
-  "ORDER BY 1, 2, 3, 4, 5"
+  "GROUP BY 1, 2, 3, 4, 5, 6",
+  "ORDER BY 1, 2, 3, 4, 5, 6"
 ].join('\n');
 
 
@@ -242,14 +299,33 @@ function actualizarTablero() {
     hoja.getRange(datos.length + 1, 1, ultima - datos.length, COLUMNAS.length).clearContent();
   }
 
+  // Metas y tipo de cambio. Si el Planning falla, el tablero sigue con los datos
+  // y sin metas: no vale la pena dejarlo sin actualizar por eso.
+  var gidMetas = '', gidTc = '', avisoPlanning = '';
+  try {
+    var planning = SpreadsheetApp.openById(PLANNING_SHEET_ID);
+    gidMetas = escribirTabla_(ss, 'metas',
+      [['tipo', 'desde', 'hasta', 'segmento', 'meta_asignados', 'meta_inversion_mxn']].concat(leerMetas_(planning)));
+    gidTc = escribirTabla_(ss, 'tc', [['mes', 'tasa']].concat(leerTipoCambio_(planning)));
+  } catch (e) {
+    avisoPlanning = e.message;
+    Logger.log('No se pudieron leer metas o tipo de cambio del Planning: ' + e.message);
+  }
+
   var fechas = filas.map(function (f) { return f[0]; });
   var meta = obtenerPestana_(ss, 'meta');
-  meta.getRange(1, 1, 5, 2).setValues([
+  meta.clearContents();
+  meta.getRange(1, 1, 8, 2).setValues([
     ['generado_utc', new Date().toISOString()],
     ['registros', filas.length],
     ['desde', fechas[0]],
     ['hasta', fechas[fechas.length - 1]],
-    ['filas_diccionario', dict.length]
+    ['filas_diccionario', dict.length],
+    // index.html lee aqui los gid de las pestañas nuevas, para no tener que
+    // copiarlos a mano cuando el script las crea.
+    ['gid_metas', gidMetas],
+    ['gid_tc', gidTc],
+    ['aviso_planning', avisoPlanning]
   ]);
 
   Logger.log('Actualizadas ' + filas.length + ' filas (' + fechas[0] + ' a ' + fechas[fechas.length - 1] + ').');
@@ -274,12 +350,13 @@ function leerDiccionario_() {
   var cBig = col('mkt_channel_big');
   var cMed = col('mkt_channel_medium');
   var cPl  = col('mkt_platform');
+  var cMedia = col('mkt_media');
 
   var dict = [];
   for (var r = 1; r < valores.length; r++) {
     var v = valores[r];
     if (!v[cUtm] && !v[cCmp]) continue;
-    dict.push({ utm: v[cUtm], cmp: v[cCmp], big: v[cBig], med: v[cMed], pl: v[cPl] });
+    dict.push({ utm: v[cUtm], cmp: v[cCmp], big: v[cBig], med: v[cMed], pl: v[cPl], media: v[cMedia] });
   }
   if (dict.length < 50) throw new Error('El diccionario trae solo ' + dict.length + ' filas; algo esta mal.');
   return dict;
@@ -317,10 +394,10 @@ function consultarBigQuery_(sql, dict) {
       res = BigQuery.Jobs.getQueryResults(PROJECT_ID, jobId, { location: location, pageToken: pageToken });
     }
     (res.rows || []).forEach(function (r) {
-      // Columnas 0-4 son texto; 5 en adelante numeros (asi la hoja no las
-      // guarda como cadenas).
+      // Las primeras N_TEXTO columnas son texto; el resto numeros (asi la hoja
+      // no las guarda como cadenas).
       filas.push(r.f.map(function (c, i) {
-        if (i <= 4) return c.v === null ? '' : c.v;
+        if (i < N_TEXTO) return c.v === null ? '' : c.v;
         return c.v === null ? 0 : Number(c.v);
       }));
     });
@@ -328,6 +405,85 @@ function consultarBigQuery_(sql, dict) {
   } while (pageToken);
 
   return filas;
+}
+
+
+// Metas del Planning en filas planas: tipo, desde, hasta, segmento, meta de
+// asignados ("MX Fuentes") y meta de inversion ("MX Inversion", que viene en
+// MILES de MXN; aqui se guarda en MXN).
+//
+// Las dos pestañas tienen la misma forma: fila 1 con el segmento sobre cada
+// bloque de 7 columnas, fila 2 con "Meta", "Meta a la fecha"..., y en la
+// columna A los nombres de seccion (Anuales, Trimestrales, Mensuales...).
+function leerMetas_(planning) {
+  var tz = planning.getSpreadsheetTimeZone();
+  var metas = {};
+  [['MX Fuentes', 'asg'], ['MX Inversion', 'inv']].forEach(function (par) {
+    var hoja = planning.getSheetByName(par[0]);
+    if (!hoja) throw new Error('El Planning no tiene la pestaña ' + par[0]);
+    var v = hoja.getDataRange().getValues();
+    var columnas = [];
+    for (var j = 0; j < v[1].length; j++) {
+      var seg = String(v[0][j] || '').trim();
+      if (seg && String(v[1][j]).trim() === 'Meta') columnas.push([j, seg]);
+    }
+    if (!columnas.length) throw new Error(par[0] + ' no trae columnas "Meta"; cambio su formato.');
+    var seccion = null;
+    for (var r = 2; r < v.length; r++) {
+      var a = String(v[r][0] || '').trim();
+      if (a && isNaN(Number(a))) { seccion = SECCIONES_META[a] || null; continue; }
+      if (!seccion || !(v[r][2] instanceof Date) || !(v[r][4] instanceof Date)) continue;
+      var desde = Utilities.formatDate(v[r][2], tz, 'yyyy-MM-dd');
+      var hasta = Utilities.formatDate(v[r][4], tz, 'yyyy-MM-dd');
+      columnas.forEach(function (c) {
+        var valor = Number(v[r][c[0]]);
+        if (!valor) return;
+        var k = [seccion, desde, hasta, c[1]].join('|');
+        metas[k] = metas[k] || { asg: '', inv: '' };
+        metas[k][par[1]] = par[1] === 'inv' ? Math.round(valor * 1000) : Math.round(valor);
+      });
+    }
+  });
+  var filas = Object.keys(metas).sort().map(function (k) {
+    return k.split('|').concat([metas[k].asg, metas[k].inv]);
+  });
+  if (filas.length < 20) throw new Error('El Planning trae solo ' + filas.length + ' metas; algo cambio.');
+  return filas;
+}
+
+
+// Promedio mensual del tipo de cambio diario de la pestaña "TRM" (columnas D y
+// E: fecha y cierre MXN por USD). Sirve para los meses sin tasa definida en
+// index.html (todo 2025).
+function leerTipoCambio_(planning) {
+  var hoja = planning.getSheetByName('TRM');
+  if (!hoja) throw new Error('El Planning no tiene la pestaña TRM');
+  var tz = planning.getSpreadsheetTimeZone();
+  var v = hoja.getDataRange().getValues();
+  var meses = {};
+  for (var r = 1; r < v.length; r++) {
+    var f = v[r][3], t = Number(v[r][4]);
+    if (!(f instanceof Date) || !t) continue;
+    var m = Utilities.formatDate(f, tz, 'yyyy-MM');
+    meses[m] = meses[m] || [0, 0];
+    meses[m][0] += t; meses[m][1]++;
+  }
+  return Object.keys(meses).sort().map(function (m) {
+    return [m, Math.round(meses[m][0] / meses[m][1] * 10000) / 10000];
+  });
+}
+
+
+// Escribe una tabla chica en su pestaña y devuelve el gid. Formato de texto
+// plano: si no, la hoja convierte "2026-10-01" en fecha y el CSV la exporta
+// como 10/1/2026.
+function escribirTabla_(ss, nombre, datos) {
+  var hoja = obtenerPestana_(ss, nombre);
+  hoja.clearContents();
+  var rango = hoja.getRange(1, 1, datos.length, datos[0].length);
+  rango.setNumberFormat('@');
+  rango.setValues(datos.map(function (f) { return f.map(String); }));
+  return String(hoja.getSheetId());
 }
 
 

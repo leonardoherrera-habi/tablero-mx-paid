@@ -11,7 +11,7 @@ del repositorio.
 
 | tablero | archivo | estado |
 |---|---|---|
-| MX Paid Media | `index.html` + hoja de Google (respaldo: `data.json`) | migrado a Apps Script el 21-oct-2026; vivo cuando la hoja esté instalada (ver abajo) |
+| MX Marketing (antes MX Paid Media) | `index.html` + hoja de Google | vivo, cada 3 h; dos pestañas desde el 29-oct-2026 (ver abajo) |
 | ChatGPT Ads MX | `chatgpt-mx/index.html` | vivo, se actualiza solo cada 3 h |
 | Ask Price | `ask_price_dashboard_v2.html` | vivo, lee una hoja cada 5 min |
 
@@ -49,9 +49,8 @@ Drive, y ese proceso dejó de correr. Se migró a
 (SpreadsheetApp) y se lo pasa a BigQuery como parámetro JSON, así que ya no
 depende de la tabla externa sobre Sheets ni del scope de Drive. Escribe la hoja
 cada 3 h; `index.html` la lee por CSV y avisa en pantalla si los datos tienen más
-de 8 h. Instalación en el encabezado del `.gs`. Hasta que se llenen `SHEET_ID` y
-`GID_META` en `index.html`, el tablero cae al `data.json` viejo y lo marca como
-desactualizado. **Revisa siempre la frescura del pipeline antes de dudar de los
+de 8 h. Instalación en el encabezado del `.gs`. `data.json` quedó obsoleto (datos
+de junio, formato viejo) y el tablero ya no lo usa. **Revisa siempre la frescura del pipeline antes de dudar de los
 datos.**
 
 Desde el 21-oct-2026 los **asignados salen del WBR mart**
@@ -69,6 +68,16 @@ por `fecha_primer_calificacion`, asignados por el `dia` del mart, citas por
 canal y la campaña del lead. Por eso un cociente del mismo día (calificados ÷
 creados) ya no es la conversión exacta de esos leads. Antes todo iba por cohorte
 de creación y las semanas recientes salían casi sin cierres.
+
+Desde el 29-oct-2026 el tablero tiene **dos pestañas**, con indicadores en filas y
+periodos en columnas (izquierda = más antiguo): "Resumen por fuente" (como "MX Mes
+Actual" de Marketing NEW) y "WEB por plataforma" (total, Paid, orgánico y campañas
+por plataforma). El script escribe la columna `segmento`: Brand y Marketing Loop
+(HubSpot `reinteresados`, como el Planning) van aparte; Total Paid = WEB Paid +
+Habímetro Paid + Lead Forms ("Perfo"). También escribe `metas` (asignados de "MX
+Fuentes" e inversión de "MX Inversion" del Planning, en MXN; a USD a 18.5) y `tc`
+(promedio mensual de la pestaña TRM); `meta` guarda sus gid. Las tasas 2026 están
+fijas en `TASAS` de `index.html`: nov y dic son estimadas y Leonardo las actualiza.
 
 El `data.json` viejo usaba otro universo de leads: el 10-jun-2026 traía 335
 creados, contra 414 (fuentes 3 + 7 + 47) de la lógica de `query.sql`, que es la
