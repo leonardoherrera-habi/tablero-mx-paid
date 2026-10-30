@@ -152,6 +152,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab" data-tab="fuentes" onclick="setTab('fuentes')">Resumen por fuente</button>
     <button class="tab" data-tab="web" onclick="setTab('web')">WEB por plataforma</button>
+    <button class="tab" data-tab="lf" onclick="setTab('lf')">Lead Forms por plataforma</button>
   </nav>
 
   <div class="filters">
@@ -229,6 +230,7 @@
     <strong>Segmentos.</strong> Total Paid = WEB Paid + Habímetro Paid + Lead Forms (sin Brand ni Marketing Loop, igual que "Perfo" del Planning).
     Total WEB = WEB Paid + WEB Direct/orgánico + Marketing Loop. Brand va aparte: su inversión no busca generar leads.
     Marketing Loop son leads viejos reactivados (campañas <code>reinteresados</code>). Paid = la campaña está marcada Paid en el diccionario UTM.<br>
+    <strong>Lead Forms por plataforma.</strong> Lead Forms es paid por definición, así que no tiene corte Paid / orgánico: total, cada plataforma (hoy Facebook y TikTok) y sus campañas. "Sin campaña" son leads de formulario que llegaron sin UTM.<br>
     <strong>Metas.</strong> De asignados ("MX Fuentes") e inversión ("MX Inversion") del Planning 2026 Oficial. En columnas de semana, mes,
     trimestre o año completos se usa la meta exacta del Planning; en días o periodos parciales, la meta mensual repartida por día.
     La meta de inversión está en pesos y se pasa a USD a la tasa fija del budget (18.5).<br>
@@ -328,6 +330,38 @@ const BLOQUES_FUENTES = [
 ];
 
 const ES_WEB = SEG(['WEB Paid', 'WEB Direct']);
+
+// Campañas de un segmento y plataforma con actividad en el rango, de mayor a
+// menor inversión, detrás de una fila que las despliega. `clave` distingue el
+// grupo abierto: Facebook de WEB y Facebook de Lead Forms son grupos distintos.
+function agregarCampanas(b, R, segmento, p, clave) {
+  const camp = {};
+  R.forEach(r => {
+    if (r.segmento !== segmento || r.plataforma !== p) return;
+    const c = camp[r.campana] = camp[r.campana] || { inv: 0, act: 0 };
+    c.inv += r.inversion; c.act += r.creados + r.inversion;
+  });
+  const lista = Object.keys(camp).filter(k => camp[k].act > 0).sort((a, z) => camp[z].inv - camp[a].inv);
+  if (!lista.length) return;
+  b.push({ toggle: clave, n: `Campañas de ${p} (${lista.length})` });
+  if (abiertos.has(clave)) lista.forEach(c => b.push({ n: c, lvl: 3, camp: true, compacto: true, f: r => r.segmento === segmento && r.plataforma === p && r.campana === c }));
+}
+
+// Lead Forms es paid por definición, así que no hay corte Paid / orgánico:
+// total, cada plataforma y sus campañas. Plataformas en el orden de su
+// inversión en el rango (hoy Facebook y TikTok).
+function bloquesLF(R) {
+  const ES_LF = SEG(['Lead Forms']);
+  const b = [{ n: 'Total Lead Forms', lvl: 0, f: ES_LF, meta: ['Leadforms Paid'], metaInv: ['Leadforms Paid'] }];
+  const inv = {};
+  R.forEach(r => { if (ES_LF(r) && r.plataforma !== 'Sin plataforma') inv[r.plataforma] = (inv[r.plataforma] || 0) + r.inversion + r.creados; });
+  Object.keys(inv).sort((a, z) => inv[z] - inv[a]).forEach(p => {
+    b.push({ n: p, lvl: 1, f: r => ES_LF(r) && r.plataforma === p });
+    agregarCampanas(b, R, 'Lead Forms', p, 'LF ' + p);
+  });
+  b.push({ n: 'Sin campaña', lvl: 1, f: r => ES_LF(r) && r.plataforma === 'Sin plataforma', nota: 'leads de formulario que llegaron sin UTM' });
+  return b;
+}
 function bloquesWeb(R) {
   const b = [
     { n: 'Total WEB', lvl: 0, f: SEG(['WEB Paid', 'WEB Direct', 'Marketing Loop']), meta: ['WEB Paid', 'WEB Non-Paid', 'Marketing Loop'], metaInv: ['WEB Paid'] },
@@ -338,18 +372,7 @@ function bloquesWeb(R) {
     b.push({ n: p, lvl: 1, f: r => ES_WEB(r) && r.plataforma === p });
     b.push({ n: p + ' Paid', lvl: 2, f: r => r.segmento === 'WEB Paid' && r.plataforma === p });
     b.push({ n: p + ' orgánico', lvl: 2, f: r => r.segmento === 'WEB Direct' && r.plataforma === p });
-    // Campañas paid de la plataforma con actividad en el rango, de mayor a menor inversión.
-    const camp = {};
-    R.forEach(r => {
-      if (r.segmento !== 'WEB Paid' || r.plataforma !== p) return;
-      const c = camp[r.campana] = camp[r.campana] || { inv: 0, act: 0 };
-      c.inv += r.inversion; c.act += r.creados + r.inversion;
-    });
-    const lista = Object.keys(camp).filter(k => camp[k].act > 0).sort((a, z) => camp[z].inv - camp[a].inv);
-    if (lista.length) {
-      b.push({ toggle: p, n: `Campañas de ${p} (${lista.length})` });
-      if (abiertos.has(p)) lista.forEach(c => b.push({ n: c, lvl: 3, camp: true, compacto: true, f: r => r.segmento === 'WEB Paid' && r.plataforma === p && r.campana === c }));
-    }
+    agregarCampanas(b, R, 'WEB Paid', p, p);
   });
   b.push({ n: 'Otras plataformas', lvl: 1, f: r => ES_WEB(r) && r.plataforma !== 'Sin plataforma' && !PLATAFORMAS.includes(r.plataforma), nota: 'blog, Instagram, YouTube…' });
   return b;
@@ -391,6 +414,10 @@ const LISTAS = {
   fuentes: {
     full:    ['reg','cal','asg','masg','casg','cit','cie','peso','conv','tasg','tcit','tcie','axc','inv','minv','cinv','cpl','cpql','cpa','cpci','cpcie'],
     compact: ['reg','cal','asg','casg','cie','inv','cpl','cpql','cpa'],
+  },
+  lf: {
+    full:    ['imp','clk','ctr','c2l','reg','cal','asg','masg','casg','cit','cie','peso','conv','tasg','tcit','tcie','inv','minv','cinv','cpm','cpc','cpl','cpql','cpa','cpci','cpcie'],
+    compact: ['imp','clk','ctr','reg','cal','asg','cie','inv','cpc','cpl','cpql','cpa'],
   },
   web: {
     full:    ['imp','clk','ctr','c2l','reg','cal','asg','masg','casg','cit','cie','peso','conv','tasg','tcit','tcie','inv','minv','cinv','cpm','cpc','cpl','cpql','cpa','cpci','cpcie'],
@@ -516,7 +543,7 @@ function render() {
   const R = DATA.filter(r => r.fecha >= desde && r.fecha <= hasta);
   const dias = diasEntre(desde, hasta);
 
-  const bloques = TAB === 'fuentes' ? BLOQUES_FUENTES : bloquesWeb(R);
+  const bloques = TAB === 'fuentes' ? BLOQUES_FUENTES : TAB === 'lf' ? bloquesLF(R) : bloquesWeb(R);
   const lista = LISTAS[TAB][vista()];
   const ref = calcularBloque(bloques[0], R, cols, colDe, gran, mxn);  // base del "peso %"
 
@@ -579,9 +606,9 @@ function render() {
   // Se lee de izquierda (más antiguo) a derecha (más reciente): arranca mostrando lo más reciente.
   wrap.scrollLeft = wrap.scrollWidth;
 
-  document.getElementById('t-title').textContent = TAB === 'fuentes' ? 'Resumen por fuente' : 'WEB por plataforma';
+  document.getElementById('t-title').textContent = { fuentes: 'Resumen por fuente', web: 'WEB por plataforma', lf: 'Lead Forms por plataforma' }[TAB];
   document.getElementById('t-sub').textContent =
-    `${desde} a ${hasta} · ${mxn ? 'MXN' : 'USD'} · ${TAB === 'fuentes' ? 'el peso % es sobre Total Marketing' : 'el peso % es sobre Total WEB; campañas = WEB Paid'}` +
+    `${desde} a ${hasta} · ${mxn ? 'MXN' : 'USD'} · ${{ fuentes: 'el peso % es sobre Total Marketing', web: 'el peso % es sobre Total WEB; campañas = WEB Paid', lf: 'el peso % es sobre Total Lead Forms' }[TAB]}` +
     (cols.some(c => !c.completo) && gran !== 'day' ? ' · * periodo parcial' : '');
 }
 
@@ -682,7 +709,7 @@ function setBanner(title, msg) {
 
 async function loadData() {
   const tabInicial = (location.hash || '').slice(1);
-  TAB = tabInicial === 'web' ? 'web' : 'fuentes';
+  TAB = ['web', 'lf'].includes(tabInicial) ? tabInicial : 'fuentes';
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === TAB));
 
   let meta = {}, rows;
