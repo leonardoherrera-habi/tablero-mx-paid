@@ -20,6 +20,9 @@
     --blk-total: rgba(129,140,248,.16);
     --blk-sub:   rgba(56,189,248,.10);
     --blk-leaf:  rgba(148,163,184,.08);
+    /* Serie categórica, pasos para fondo oscuro (validada contra #1e293b). */
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
   }
   [data-theme="light"] {
     --bg:       #f1f5f9;
@@ -36,6 +39,9 @@
     --blk-total: rgba(79,70,229,.12);
     --blk-sub:   rgba(3,105,161,.08);
     --blk-leaf:  rgba(100,116,139,.07);
+    /* Mismos tonos, pasos para fondo claro (validada contra #ffffff). */
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:13px; line-height:1.5; }
@@ -125,6 +131,39 @@
   .notes strong { color:var(--text); }
   code { background:var(--surface); padding:1px 5px; border-radius:3px; }
 
+  /* ── Pestaña Mix de inversión ── */
+  .mix { padding:16px; display:flex; flex-direction:column; gap:16px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:12px; }
+  .tile { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+  .tile-t { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  .tile-v { font-size:24px; font-weight:600; margin:2px 0; }
+  .tile-s { font-size:11px; color:var(--muted); line-height:1.4; }
+  .delta.ok { color:var(--green); } .delta.bad { color:var(--red); }
+  .muted { color:var(--muted); font-weight:400; }
+  .chart-card { border:1px solid var(--border); border-radius:8px; padding:12px 14px; background:var(--surface); }
+  .chart-head { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+  .chart-t { font-size:13px; font-weight:600; }
+  .chart-s { font-size:11px; color:var(--muted); max-width:620px; }
+  .chart-ctl { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start; justify-content:flex-end; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { display:inline-flex; align-items:center; gap:6px; background:var(--bg); border:1px solid var(--border); color:var(--muted); border-radius:999px; padding:3px 10px; font-size:11px; cursor:pointer; font-family:inherit; }
+  .chip.on { color:var(--text); border-color:var(--accent); }
+  .chip:not(.on) svg { opacity:.35; }
+  .chart { position:relative; }
+  .chart svg { display:block; overflow:visible; }
+  .chart .grid { stroke:var(--border); stroke-width:1; }
+  .chart .ref { stroke:var(--muted); stroke-width:1; stroke-dasharray:4 4; }
+  .chart .ax { fill:var(--muted); font-size:10px; font-variant-numeric:tabular-nums; }
+  .chart .lbl { fill:var(--text); font-size:11px; }
+  .chart .cross { stroke:var(--muted); stroke-width:1; }
+  .tt { position:absolute; pointer-events:none; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:11px; box-shadow:0 4px 14px rgba(0,0,0,.25); min-width:180px; z-index:5; }
+  .tt-h { font-weight:600; margin-bottom:4px; }
+  .tt-r { display:flex; align-items:center; gap:6px; }
+  .tt-r b { margin-left:auto; padding-left:12px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .tt-tot { border-top:1px solid var(--border); margin-top:4px; padding-top:4px; }
+  .sw { width:10px; height:10px; border-radius:2px; flex:none; }
+  .mix-nota { font-size:11px; color:var(--muted); }
+
   @media (max-width: 720px) {
     header, main { padding-left:16px; padding-right:16px; }
     .c-seg { min-width:120px; max-width:120px; }
@@ -153,6 +192,7 @@
     <button class="tab" data-tab="fuentes" onclick="setTab('fuentes')">Resumen por fuente</button>
     <button class="tab" data-tab="web" onclick="setTab('web')">WEB por plataforma</button>
     <button class="tab" data-tab="lf" onclick="setTab('lf')">Lead Forms por plataforma</button>
+    <button class="tab" data-tab="mix" onclick="setTab('mix')">Mix de inversión</button>
   </nav>
 
   <div class="filters">
@@ -543,6 +583,16 @@ function render() {
   const R = DATA.filter(r => r.fecha >= desde && r.fecha <= hasta);
   const dias = diasEntre(desde, hasta);
 
+  if (TAB === 'mix') {
+    wrap.style.maxHeight = 'none';
+    renderMix(wrap, R, cols, colDe, gran, mxn, desde, hasta);
+    document.getElementById('t-title').textContent = 'Mix de inversión';
+    document.getElementById('t-sub').textContent = `${desde} a ${hasta} · ${mxn ? 'MXN' : 'USD'} · pasa el mouse sobre las gráficas para ver cada periodo` +
+      (cols.some(c => !c.completo) && gran !== 'day' ? ' · el primer o último periodo puede ser parcial' : '');
+    return;
+  }
+  wrap.style.maxHeight = '';
+
   const bloques = TAB === 'fuentes' ? BLOQUES_FUENTES : TAB === 'lf' ? bloquesLF(R) : bloquesWeb(R);
   const lista = LISTAS[TAB][vista()];
   const ref = calcularBloque(bloques[0], R, cols, colDe, gran, mxn);  // base del "peso %"
@@ -610,6 +660,259 @@ function render() {
   document.getElementById('t-sub').textContent =
     `${desde} a ${hasta} · ${mxn ? 'MXN' : 'USD'} · ${{ fuentes: 'el peso % es sobre Total Marketing', web: 'el peso % es sobre Total WEB; campañas = WEB Paid', lf: 'el peso % es sobre Total Lead Forms' }[TAB]}` +
     (cols.some(c => !c.completo) && gran !== 'day' ? ' · * periodo parcial' : '');
+}
+
+// ─── Pestaña "Mix de inversión" ────────────────────────────────────────────────
+// Para decidir cuánto presupuesto pasar de Lead Forms a WEB. Gráficas en SVG
+// propio (sin librerías), con los mismos filtros de periodo, granularidad y
+// moneda que el resto del tablero.
+//
+// El color sigue a la fuente, nunca a su posición: WEB Paid siempre es azul
+// aunque se apaguen las demás. Orden de la paleta validado contra daltonismo
+// en modo oscuro y claro (skill dataviz, 05-nov-2026).
+const SERIES_MIX = [
+  { id: 'web',  n: 'WEB Paid',          c: 'var(--s1)', f: SEG(['WEB Paid']),        inv: true },
+  { id: 'lf',   n: 'Lead Forms',        c: 'var(--s2)', f: SEG(['Lead Forms']),      inv: true },
+  { id: 'hp',   n: 'Habímetro Paid',    c: 'var(--s3)', f: SEG(['Habímetro Paid']),  inv: true },
+  { id: 'wd',   n: 'WEB Directo',       c: 'var(--s4)', f: SEG(['WEB Direct']) },
+  { id: 'ml',   n: 'Marketing Loop',    c: 'var(--s5)', f: SEG(['Marketing Loop']) },
+  { id: 'bk',   n: 'Brokers',           c: 'var(--s6)', f: SEG(['Brokers']) },
+  { id: 'brand',n: 'Brand',             c: 'var(--s7)', f: SEG(['Brand']),           inv: true },
+  { id: 'hd',   n: 'Habímetro Directo', c: 'var(--s8)', f: SEG(['Habímetro Direct']) },
+  { id: 'tp',   n: 'Total Paid',        c: 'var(--text)',  dash: '7 4', f: SEG(['WEB Paid', 'Habímetro Paid', 'Lead Forms']), inv: true, total: true },
+  { id: 'tm',   n: 'Total Marketing',   c: 'var(--muted)', dash: '2 4', f: () => true, inv: true, total: true },
+];
+const SERIE = Object.fromEntries(SERIES_MIX.map(s => [s.id, s]));
+const METRICAS_COSTO = { cpl: ['CP Lead', 'reg'], cpql: ['CP Calificado', 'cal'], cpa: ['CP Asignado', 'asg'], cpcie: ['CP Cierre', 'cie'] };
+const METRICAS_VOL   = { reg: 'Registros', cal: 'Calificados', asg: 'Asignados', cie: 'Cierres' };
+const MIX = {
+  costo: 'cpa', vol: 'asg', modoInv: 'abs',
+  serCosto: new Set(['web', 'lf', 'tp']),
+  serVol: new Set(['web', 'lf', 'wd', 'ml']),
+};
+let CHARTS = {};   // datos de cada gráfica para el tooltip
+
+function renderMix(wrap, R, cols, colDe, gran, mxn, desde, hasta) {
+  const acc = {};
+  SERIES_MIX.forEach(s => { acc[s.id] = calcularBloque(s, R, cols, colDe, gran, mxn); });
+  // Periodo anterior del mismo largo, para la variación de las tarjetas.
+  const dias = diasEntre(desde, hasta);
+  const pDesde = addDays(desde, -dias), pHasta = addDays(desde, -1);
+  const Rp = DATA.filter(r => r.fecha >= pDesde && r.fecha <= pHasta);
+  const prev = {};
+  ['web', 'lf', 'tp'].forEach(id => { prev[id] = vacio(); Rp.forEach(r => { if (SERIE[id].f(r)) acumular(prev[id], r, mxn); }); });
+  const hayPrev = pDesde >= MIN_FECHA;
+
+  // Periodos incompletos (el primero o el último del rango): se dibujan
+  // tenues y punteados para que una semana de 3 días no parezca una caída.
+  const parcial = cols.map(c => !c.completo && gran !== 'day');
+  const etiquetas = cols.map((c, i) => { const e = etiqueta(c, gran); return parcial[i] ? [e[0] + '*', (e[1] || '') + ' (parcial)'] : e; });
+  const W = Math.max(320, wrap.clientWidth - 40);
+  CHARTS = {};
+  const money = v => (v == null ? '—' : '$' + nf0.format(v));
+  const costoFmt = v => (v == null ? '—' : '$' + (mxn ? nf0 : nf1).format(v));
+
+  // Tarjetas
+  const tp = acc.tp.tot, web = acc.web.tot, lf = acc.lf.tot;
+  const shareWeb = div(web.inv, web.inv + lf.inv);
+  const cpa = a => div(a.inv, a.asg), cpql = a => div(a.inv, a.cal);
+  const delta = (id, fn) => {
+    if (!hayPrev) return '';
+    const a = fn(acc[id].tot), b = fn(prev[id]);
+    if (a == null || b == null || !b) return '';
+    const d = a / b - 1;
+    // En costos, bajar es bueno.
+    return `<span class="delta ${d <= 0 ? 'ok' : 'bad'}">${d > 0 ? '▲' : '▼'} ${nf0.format(Math.abs(d) * 100)}% vs periodo anterior</span>`;
+  };
+  const holgura = div(cpa(lf), cpa(web));
+  const tarjeta = (titulo, valor, sub) => `<div class="tile"><div class="tile-t">${titulo}</div><div class="tile-v">${valor}</div><div class="tile-s">${sub}</div></div>`;
+  let h = '<div class="mix">';
+  h += '<div class="tiles">' +
+    tarjeta('Inversión paid', money(tp.inv), `WEB ${shareWeb == null ? '—' : nf0.format(shareWeb * 100) + '%'} · Lead Forms ${shareWeb == null ? '—' : nf0.format((1 - shareWeb) * 100) + '%'} <span class="muted">(de WEB + LF)</span>`) +
+    tarjeta('CP Asignado WEB Paid', costoFmt(cpa(web)), delta('web', cpa) || '&nbsp;') +
+    tarjeta('CP Asignado Lead Forms', costoFmt(cpa(lf)), delta('lf', cpa) || '&nbsp;') +
+    tarjeta('CP Asignado Total Paid', costoFmt(cpa(tp)), delta('tp', cpa) || '&nbsp;') +
+    tarjeta('Holgura de WEB', holgura == null ? '—' : (holgura >= 1 ? '+' : '') + nf0.format((holgura - 1) * 100) + '%',
+      'cuánto más caro puede ser el asignado de WEB antes de igualar al de Lead Forms (promedio del periodo)') +
+    '</div>';
+
+  // 1. Mix de inversión (barras apiladas)
+  const apiladas = ['web', 'lf', 'hp', 'brand'];
+  h += card('Mix de inversión paid', 'inversión de cada fuente por periodo' + (MIX.modoInv === 'pct' ? ', como % del total' : ''),
+    segControl('modoInv', { abs: mxn ? 'MXN' : 'USD', pct: '%' }),
+    barrasApiladas('c-inv', W, etiquetas, apiladas.map(id => ({ s: SERIE[id], v: acc[id].porCol.map(a => a.inv) })), MIX.modoInv === 'pct', money, parcial));
+
+  // 2. Costos por etapa (líneas)
+  const [nomCosto, campo] = METRICAS_COSTO[MIX.costo];
+  const serC = SERIES_MIX.filter(s => s.inv && MIX.serCosto.has(s.id));
+  h += card(nomCosto + ' por fuente', 'sólo fuentes con inversión; las líneas punteadas son totales',
+    selectControl('costo', Object.fromEntries(Object.entries(METRICAS_COSTO).map(([k, v]) => [k, v[0]]))) + chips('serCosto', SERIES_MIX.filter(s => s.inv)),
+    lineas('c-costo', W, etiquetas, serC.map(s => ({ s, v: acc[s.id].porCol.map(a => div(a.inv, a[campo])) })), costoFmt, { parcial }));
+
+  // 3. Holgura de WEB frente a Lead Forms
+  const hol = acc.web.porCol.map((a, i) => { const x = div(cpa(acc.lf.porCol[i]), cpa(a)); return x == null ? null : x - 1; });
+  h += card('Holgura de WEB frente a Lead Forms',
+    'CP Asignado de Lead Forms ÷ CP Asignado de WEB − 1. Arriba de 0, pasar un dólar de LF a WEB cuesta menos por asignado <b>en promedio</b>; la línea de 15% es tu referencia de tolerancia',
+    '', lineas('c-hol', W, etiquetas, [{ s: { n: 'Holgura de WEB', c: 'var(--s1)' }, v: hol }], v => (v == null ? '—' : (v >= 0 ? '+' : '') + nf0.format(v * 100) + '%'), { refs: [{ v: 0, l: '0%' }, { v: 0.15, l: '15%' }], parcial }));
+
+  // 4. Volumen por fuente
+  const serV = SERIES_MIX.filter(s => MIX.serVol.has(s.id));
+  h += card(METRICAS_VOL[MIX.vol] + ' por fuente', 'conteos por la fecha de cada etapa',
+    selectControl('vol', METRICAS_VOL) + chips('serVol', SERIES_MIX),
+    lineas('c-vol', W, etiquetas, serV.map(s => ({ s, v: acc[s.id].porCol.map(a => a[MIX.vol]) })), v => (v == null ? '—' : nf0.format(v)), { parcial }));
+
+  h += '<p class="mix-nota">Esto es la vista de tendencias. Próximo paso: la curva de respuesta por canal (costo del <i>siguiente</i> asignado) y el simulador de reasignación. ' +
+       'La holgura de arriba usa promedios; el costo marginal de WEB es más alto que su promedio porque tiene rendimientos decrecientes.</p></div>';
+  wrap.innerHTML = h;
+  wrap.querySelectorAll('.chart').forEach(conectarTooltip);
+}
+
+function card(titulo, sub, controles, cuerpo) {
+  return `<div class="chart-card"><div class="chart-head"><div><div class="chart-t">${titulo}</div><div class="chart-s">${sub}</div></div><div class="chart-ctl">${controles}</div></div>${cuerpo}</div>`;
+}
+function selectControl(clave, opciones) {
+  return `<select onchange="MIX.${clave}=this.value;render()">` +
+    Object.entries(opciones).map(([k, v]) => `<option value="${k}"${MIX[clave] === k ? ' selected' : ''}>${v}</option>`).join('') + '</select>';
+}
+function segControl(clave, opciones) {
+  return '<div class="seg">' + Object.entries(opciones).map(([k, v]) =>
+    `<button class="${MIX[clave] === k ? 'on' : ''}" onclick="MIX.${clave}='${k}';render()">${v}</button>`).join('') + '</div>';
+}
+function chips(clave, series) {
+  return '<div class="chips">' + series.map(s =>
+    `<button class="chip ${MIX[clave].has(s.id) ? 'on' : ''}" onclick="toggleSerie('${clave}','${s.id}')">` +
+    `<svg width="16" height="8" aria-hidden="true"><line x1="1" y1="4" x2="15" y2="4" stroke="${s.c}" stroke-width="2.5" ${s.dash ? `stroke-dasharray="${s.dash.split(' ').map(x => x / 2).join(' ')}"` : ''}/></svg>${s.n}</button>`).join('') + '</div>';
+}
+function toggleSerie(clave, id) {
+  const set = MIX[clave];
+  set.has(id) ? set.delete(id) : set.add(id);
+  render();
+}
+
+// Escala "bonita" para el eje Y.
+function ticks(max) {
+  if (!(max > 0)) return [0, 1];
+  const paso0 = max / 4, mag = Math.pow(10, Math.floor(Math.log10(paso0)));
+  const paso = [1, 2, 2.5, 5, 10].map(m => m * mag).find(p => p >= paso0);
+  const out = [];
+  for (let v = 0; v <= max + paso * 0.001; v += paso) out.push(v);
+  if (out[out.length - 1] < max) out.push(out[out.length - 1] + paso);
+  return out;
+}
+const corto = v => (Math.abs(v) >= 1e6 ? nf1.format(v / 1e6) + 'M' : Math.abs(v) >= 1e4 ? nf0.format(v / 1e3) + 'k' : nf0.format(v));
+
+// Marco común: ejes, rejilla y etiquetas de X. Devuelve funciones de posición.
+function marco(W, H, n, etiquetas, yMin, yMax, fmtY) {
+  etiquetas = etiquetas.map(e => [e[0].replace('*', '') + (e[1] && e[1].includes('parcial') ? '*' : ''), e[1]]);
+  const m = { l: 56, r: 118, t: 12, b: 34 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const ts = ticks(yMax - yMin).map(t => t + yMin);
+  const top = ts[ts.length - 1];
+  const x = i => m.l + (n === 1 ? iw / 2 : (i + 0.5) * iw / n);
+  const y = v => m.t + ih - (v - yMin) / (top - yMin) * ih;
+  let g = '';
+  ts.forEach(t => { g += `<line class="grid" x1="${m.l}" x2="${m.l + iw}" y1="${y(t)}" y2="${y(t)}"/><text class="ax" x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${fmtY(t)}</text>`; });
+  const cada = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(iw / 64))));
+  etiquetas.forEach((e, i) => {
+    if ((n - 1 - i) % cada) return;   // siempre se ve la más reciente
+    g += `<text class="ax" x="${x(i)}" y="${H - 14}" text-anchor="middle">${esc(e[0])}</text>`;
+  });
+  return { m, iw, ih, x, y, g };
+}
+
+function lineas(id, W, etiquetas, series, fmt, opt = {}) {
+  const H = 260, n = etiquetas.length;
+  if (!series.length) return '<div class="empty">Elige al menos una fuente.</div>';
+  const vals = series.flatMap(s => s.v).filter(v => v != null && isFinite(v));
+  if (!vals.length) return '<div class="empty">Sin datos en el rango.</div>';
+  const refs = opt.refs || [];
+  const yMin = Math.min(0, ...vals, ...refs.map(r => r.v));
+  const yMax = Math.max(...vals, ...refs.map(r => r.v));
+  const fmtY = opt.refs ? (v => nf0.format(v * 100) + '%') : corto;
+  const f = marco(W, H, n, etiquetas, yMin, yMax, fmtY);
+  let s = f.g;
+  refs.forEach(r => { s += `<line class="ref" x1="${f.m.l}" x2="${f.m.l + f.iw}" y1="${f.y(r.v)}" y2="${f.y(r.v)}"/><text class="ax" x="${f.m.l + f.iw + 6}" y="${f.y(r.v) + 4}">${r.l}</text>`; });
+  const finales = [];
+  const parcial = opt.parcial || [];
+  const ok = v => v != null && isFinite(v);
+  series.forEach(se => {
+    let d = '', dp = '';
+    const pt = i => f.x(i).toFixed(1) + ' ' + f.y(se.v[i]).toFixed(1);
+    for (let i = 1; i < n; i++) {
+      if (!ok(se.v[i - 1]) || !ok(se.v[i])) continue;
+      const tramo = 'M' + pt(i - 1) + 'L' + pt(i);
+      if (parcial[i - 1] || parcial[i]) dp += tramo; else d += tramo;
+    }
+    s += `<path d="${d}" fill="none" stroke="${se.s.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" ${se.s.dash ? `stroke-dasharray="${se.s.dash}"` : ''}/>`;
+    if (dp) s += `<path d="${dp}" fill="none" stroke="${se.s.c}" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 4" opacity=".55"/>`;
+    // Un solo punto suelto no dibuja línea: se marca.
+    se.v.forEach((v, i) => {
+      const solo = v != null && (i === 0 || se.v[i - 1] == null) && (i === n - 1 || se.v[i + 1] == null);
+      if (solo) s += `<circle cx="${f.x(i)}" cy="${f.y(v)}" r="3" fill="${se.s.c}"/>`;
+    });
+    let k = n - 1; while (k >= 0 && (se.v[k] == null || !isFinite(se.v[k]))) k--;
+    if (k >= 0) finales.push({ y: f.y(se.v[k]), x: f.x(k), n: se.s.n, c: se.s.c });
+  });
+  // Etiqueta directa al final de cada línea, separadas para que no se encimen.
+  finales.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < finales.length; i++) if (finales[i].y - finales[i - 1].y < 13) finales[i].y = finales[i - 1].y + 13;
+  if (series.length > 1 || !opt.refs) finales.forEach(e => { s += `<text class="lbl" x="${f.m.l + f.iw + 6}" y="${e.y + 4}">${esc(e.n)}</text>`; });
+  CHARTS[id] = { tipo: 'linea', etiquetas, series: series.map(se => ({ n: se.s.n, c: se.s.c, v: se.v })), fmt, f: { l: f.m.l, iw: f.iw, n, t: f.m.t, ih: f.ih } };
+  return `<div class="chart" data-id="${id}"><svg width="${W}" height="${H}" role="img" aria-label="gráfica de líneas">${s}<line class="cross" x1="0" x2="0" y1="${f.m.t}" y2="${f.m.t + f.ih}" style="display:none"/></svg><div class="tt" style="display:none"></div></div>`;
+}
+
+function barrasApiladas(id, W, etiquetas, series, pct, fmt, parcial = []) {
+  const H = 260, n = etiquetas.length;
+  const tot = etiquetas.map((_, i) => series.reduce((s, se) => s + (se.v[i] || 0), 0));
+  const val = (se, i) => (pct ? div(se.v[i] || 0, tot[i]) || 0 : se.v[i] || 0);
+  const yMax = pct ? 1 : Math.max(...tot);
+  if (!(yMax > 0)) return '<div class="empty">Sin inversión en el rango.</div>';
+  const f = marco(W, H, n, etiquetas, 0, yMax, pct ? (v => nf0.format(v * 100) + '%') : corto);
+  const ancho = Math.max(3, Math.min(48, f.iw / n * 0.62));
+  let s = f.g;
+  etiquetas.forEach((_, i) => {
+    let base = 0;
+    series.forEach((se, j) => {
+      const v = val(se, i); if (!(v > 0)) return;
+      const y0 = f.y(base), y1 = f.y(base + v);
+      // 2px de separación entre segmentos, del color de la superficie.
+      s += `<rect x="${(f.x(i) - ancho / 2).toFixed(1)}" y="${y1.toFixed(1)}" width="${ancho.toFixed(1)}" height="${Math.max(0, y0 - y1 - 2).toFixed(1)}" fill="${se.s.c}" rx="${j === series.length - 1 ? 2 : 0}"${parcial[i] ? ' opacity=".4"' : ''}/>`;
+      base += v;
+    });
+  });
+  // Leyenda a la derecha, en el orden de apilado (de arriba hacia abajo).
+  [...series].reverse().forEach((se, j) => { s += `<rect x="${f.m.l + f.iw + 10}" y="${f.m.t + j * 18}" width="10" height="10" rx="2" fill="${se.s.c}"/><text class="lbl" x="${f.m.l + f.iw + 26}" y="${f.m.t + j * 18 + 9}">${esc(se.s.n)}</text>`; });
+  CHARTS[id] = { tipo: 'barra', etiquetas, series: series.map(se => ({ n: se.s.n, c: se.s.c, v: se.v })), tot, fmt, f: { l: f.m.l, iw: f.iw, n, t: f.m.t, ih: f.ih } };
+  return `<div class="chart" data-id="${id}"><svg width="${W}" height="${H}" role="img" aria-label="barras apiladas">${s}<line class="cross" x1="0" x2="0" y1="${f.m.t}" y2="${f.m.t + f.ih}" style="display:none"/></svg><div class="tt" style="display:none"></div></div>`;
+}
+
+// Línea vertical y tooltip con todos los valores del periodo bajo el cursor.
+function conectarTooltip(el) {
+  const ch = CHARTS[el.dataset.id]; if (!ch) return;
+  const svg = el.querySelector('svg'), tt = el.querySelector('.tt'), cross = el.querySelector('.cross');
+  const mover = ev => {
+    const r = svg.getBoundingClientRect();
+    const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+    const { l, iw, n } = ch.f;
+    const i = Math.max(0, Math.min(n - 1, Math.floor((px - l) / (iw / n))));
+    if (px < l - 10 || px > l + iw + 10) { tt.style.display = 'none'; cross.style.display = 'none'; return; }
+    const cx = l + (n === 1 ? iw / 2 : (i + 0.5) * iw / n);
+    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.style.display = '';
+    const e = ch.etiquetas[i];
+    let h = `<div class="tt-h">${esc(e[0])} ${esc(e[1] || '')}</div>`;
+    ch.series.forEach(s => {
+      const v = s.v[i];
+      const extra = ch.tipo === 'barra' && ch.tot[i] > 0 ? ` <span class="muted">${nf0.format((v || 0) / ch.tot[i] * 100)}%</span>` : '';
+      h += `<div class="tt-r"><span class="sw" style="background:${s.c}"></span>${esc(s.n)}<b>${ch.fmt(v)}${extra}</b></div>`;
+    });
+    if (ch.tipo === 'barra') h += `<div class="tt-r tt-tot">Total<b>${ch.fmt(ch.tot[i])}</b></div>`;
+    tt.innerHTML = h; tt.style.display = '';
+    const izq = cx + 14 + tt.offsetWidth > r.width ? cx - 14 - tt.offsetWidth : cx + 14;
+    tt.style.left = izq + 'px'; tt.style.top = '10px';
+  };
+  svg.addEventListener('mousemove', mover);
+  svg.addEventListener('touchstart', mover, { passive: true });
+  svg.addEventListener('mouseleave', () => { tt.style.display = 'none'; cross.style.display = 'none'; });
 }
 
 // ─── Controles ─────────────────────────────────────────────────────────────────
@@ -709,7 +1012,7 @@ function setBanner(title, msg) {
 
 async function loadData() {
   const tabInicial = (location.hash || '').slice(1);
-  TAB = ['web', 'lf'].includes(tabInicial) ? tabInicial : 'fuentes';
+  TAB = ['web', 'lf', 'mix'].includes(tabInicial) ? tabInicial : 'fuentes';
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === TAB));
 
   let meta = {}, rows;
@@ -758,6 +1061,8 @@ async function loadData() {
 }
 
 document.addEventListener('DOMContentLoaded', loadData);
+// Las gráficas se dibujan al ancho de la pantalla: se rehacen si cambia.
+let _rz; window.addEventListener('resize', () => { if (TAB !== 'mix') return; clearTimeout(_rz); _rz = setTimeout(render, 200); });
 </script>
 </body>
 </html>
