@@ -41,9 +41,10 @@ var TABLERO_SHEET_ID = '18y7MAizfvsO7Pwy7SlBSBmSY1BHCoRpwYmoHMzUQKSs';
 var DICT_SHEET_ID = '1sBg4hIBzWDTfZhORtr-HtVIfxvnILmJqCqfzuk1Jpxk';
 var DICT_TAB = 'MX';
 
-// Ventana movil. ~13 meses, igual que el data.json anterior; evita que la hoja
-// crezca sin limite.
-var DIAS_HISTORIA = 400;
+// Historia desde el 1 de enero de 2024 (pedido de Leonardo, 05-nov-2026, para
+// medir el mix WEB / Lead Forms con mas de un año). Crece ~19 mil filas por
+// año; la hoja aguanta 10 millones de celdas, asi que sobra para varios años.
+var INICIO_HISTORIA = '2024-01-01';
 
 var COLUMNAS = ['fecha', 'segmento', 'sub_canal', 'plataforma', 'campana', 'medio',
                 'creados', 'calificados', 'asignados', 'cita_agendada', 'cierres',
@@ -62,7 +63,7 @@ var SECCIONES_META = { 'Anuales': 'anual', 'Trimestrales': 'trimestral',
 // Corte en fecha de Mexico, no UTC: corriendo de noche, UTC ya seria mañana y
 // colaria el dia en curso, que viene incompleto.
 var HOY = "CURRENT_DATE('America/Mexico_City')";
-var DESDE = "DATE_SUB(" + HOY + ", INTERVAL " + DIAS_HISTORIA + " DAY)";
+var DESDE = "DATE '" + INICIO_HISTORIA + "'";
 
 var SQL = [
   // Diccionario recibido como JSON desde la hoja. NULLIF('') replica como la

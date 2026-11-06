@@ -153,6 +153,7 @@
   .chart svg { display:block; overflow:visible; }
   .chart .grid { stroke:var(--border); stroke-width:1; }
   .chart .ref { stroke:var(--muted); stroke-width:1; stroke-dasharray:4 4; }
+  .chart .ref-l { paint-order:stroke; stroke:var(--surface); stroke-width:3px; }
   .chart .ax { fill:var(--muted); font-size:10px; font-variant-numeric:tabular-nums; }
   .chart .lbl { fill:var(--text); font-size:11px; }
   .chart .cross { stroke:var(--muted); stroke-width:1; }
@@ -457,11 +458,11 @@ const LISTAS = {
   },
   lf: {
     full:    ['imp','clk','ctr','c2l','reg','cal','asg','masg','casg','cit','cie','peso','conv','tasg','tcit','tcie','inv','minv','cinv','cpm','cpc','cpl','cpql','cpa','cpci','cpcie'],
-    compact: ['imp','clk','ctr','reg','cal','asg','cie','inv','cpc','cpl','cpql','cpa'],
+    compact: ['imp','clk','ctr','reg','cal','asg','cie','inv','cpm','cpc','cpl','cpql','cpa'],
   },
   web: {
     full:    ['imp','clk','ctr','c2l','reg','cal','asg','masg','casg','cit','cie','peso','conv','tasg','tcit','tcie','inv','minv','cinv','cpm','cpc','cpl','cpql','cpa','cpci','cpcie'],
-    compact: ['imp','clk','ctr','reg','cal','asg','cie','inv','cpc','cpl','cpql','cpa'],
+    compact: ['imp','clk','ctr','reg','cal','asg','cie','inv','cpm','cpc','cpl','cpql','cpa'],
   },
 };
 
@@ -725,6 +726,12 @@ function renderMix(wrap, R, cols, colDe, gran, mxn, desde, hasta) {
     return `<span class="delta ${d <= 0 ? 'ok' : 'bad'}">${d > 0 ? '▲' : '▼'} ${nf0.format(Math.abs(d) * 100)}% vs periodo anterior</span>`;
   };
   const holgura = div(cpa(lf), cpa(web));
+  // Holgura de toda la historia de la hoja (desde 2024): la referencia estable
+  // contra la que se lee la del periodo. Misma moneda que la vista.
+  const hist = { web: vacio(), lf: vacio() };
+  DATA.forEach(r => { if (SERIE.web.f(r)) acumular(hist.web, r, mxn); else if (SERIE.lf.f(r)) acumular(hist.lf, r, mxn); });
+  const holguraHist = div(cpa(hist.lf), cpa(hist.web));
+  const pctH = x => (x == null ? '—' : (x >= 1 ? '+' : '') + nf0.format((x - 1) * 100) + '%');
   const tarjeta = (titulo, valor, sub) => `<div class="tile"><div class="tile-t">${titulo}</div><div class="tile-v">${valor}</div><div class="tile-s">${sub}</div></div>`;
   let h = '<div class="mix">';
   h += '<div class="tiles">' +
@@ -732,8 +739,8 @@ function renderMix(wrap, R, cols, colDe, gran, mxn, desde, hasta) {
     tarjeta('CP Asignado WEB Paid', costoFmt(cpa(web)), delta('web', cpa) || '&nbsp;') +
     tarjeta('CP Asignado Lead Forms', costoFmt(cpa(lf)), delta('lf', cpa) || '&nbsp;') +
     tarjeta('CP Asignado Total Paid', costoFmt(cpa(tp)), delta('tp', cpa) || '&nbsp;') +
-    tarjeta('Holgura de WEB', holgura == null ? '—' : (holgura >= 1 ? '+' : '') + nf0.format((holgura - 1) * 100) + '%',
-      'cuánto más caro puede ser el asignado de WEB antes de igualar al de Lead Forms (promedio del periodo)') +
+    tarjeta('Holgura de WEB', pctH(holgura),
+      `cuánto más caro puede ser el asignado de WEB antes de igualar al de Lead Forms en este periodo · <b>desde ${MIN_FECHA.slice(0, 4)}: ${pctH(holguraHist)}</b>`) +
     '</div>';
 
   // 1. Mix de inversión (barras apiladas)
@@ -751,9 +758,25 @@ function renderMix(wrap, R, cols, colDe, gran, mxn, desde, hasta) {
 
   // 3. Holgura de WEB frente a Lead Forms
   const hol = acc.web.porCol.map((a, i) => { const x = div(cpa(acc.lf.porCol[i]), cpa(a)); return x == null ? null : x - 1; });
+  // Móvil de 4 periodos: suma inversión y asignados de las 4 ventanas y divide
+  // (no promedia porcentajes), para que una semana rara no domine.
+  const movil = hol.map((_, i) => {
+    if (i < 3) return null;
+    const w = vacio(), l = vacio();
+    for (let k = i - 3; k <= i; k++) { w.inv += acc.web.porCol[k].inv; w.asg += acc.web.porCol[k].asg; l.inv += acc.lf.porCol[k].inv; l.asg += acc.lf.porCol[k].asg; }
+    const x = div(cpa(l), cpa(w)); return x == null ? null : x - 1;
+  });
+  const fmtHol = v => (v == null ? '—' : (v >= 0 ? '+' : '') + nf0.format(v * 100) + '%');
+  const refsHol = [{ v: 0, l: 'iguales' }];
+  if (holgura != null) refsHol.push({ v: holgura - 1, l: 'periodo ' + fmtHol(holgura - 1) });
+  if (holguraHist != null) refsHol.push({ v: holguraHist - 1, l: `desde ${MIN_FECHA.slice(0, 4)} ${fmtHol(holguraHist - 1)}` });
   h += card('Holgura de WEB frente a Lead Forms',
-    'CP Asignado de Lead Forms ÷ CP Asignado de WEB − 1. Arriba de 0, pasar un dólar de LF a WEB cuesta menos por asignado <b>en promedio</b>; la línea de 15% es tu referencia de tolerancia',
-    '', lineas('c-hol', W, etiquetas, [{ s: { n: 'Holgura de WEB', c: 'var(--s1)' }, v: hol }], v => (v == null ? '—' : (v >= 0 ? '+' : '') + nf0.format(v * 100) + '%'), { refs: [{ v: 0, l: '0%' }, { v: 0.15, l: '15%' }], parcial }));
+    'CP Asignado de Lead Forms ÷ CP Asignado de WEB − 1: cuánto puede encarecerse el asignado de WEB antes de costar lo mismo que el de Lead Forms. ' +
+    'Arriba de "iguales", WEB es más barato. Es <b>promedio</b>, no marginal: el techo del espacio que hay, no lo que vas a conseguir.',
+    '', lineas('c-hol', W, etiquetas, [
+      { s: { n: 'Por periodo', c: 'var(--muted)' }, v: hol },
+      { s: { n: 'Móvil 4 periodos', c: 'var(--s1)' }, v: movil },
+    ], fmtHol, { refs: refsHol, parcial }));
 
   // 4. Volumen por fuente
   const serV = SERIES_MIX.filter(s => MIX.serVol.has(s.id));
@@ -831,7 +854,11 @@ function lineas(id, W, etiquetas, series, fmt, opt = {}) {
   const fmtY = opt.refs ? (v => nf0.format(v * 100) + '%') : corto;
   const f = marco(W, H, n, etiquetas, yMin, yMax, fmtY);
   let s = f.g;
-  refs.forEach(r => { s += `<line class="ref" x1="${f.m.l}" x2="${f.m.l + f.iw}" y1="${f.y(r.v)}" y2="${f.y(r.v)}"/><text class="ax" x="${f.m.l + f.iw + 6}" y="${f.y(r.v) + 4}">${r.l}</text>`; });
+  // Etiqueta de cada referencia a la izquierda, encima de su línea: la derecha
+  // es de las etiquetas de las series. Se separan si quedan muy juntas.
+  const ry = refs.map(r => ({ r, y: f.y(r.v) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ry.length; i++) if (ry[i].y - ry[i - 1].y < 13) ry[i].ly = (ry[i - 1].ly || ry[i - 1].y) + 13;
+  ry.forEach(({ r, y, ly }) => { s += `<line class="ref" x1="${f.m.l}" x2="${f.m.l + f.iw}" y1="${y}" y2="${y}"/><text class="ax ref-l" x="${f.m.l + 4}" y="${(ly || y) - 4}">${esc(r.l)}</text>`; });
   const finales = [];
   const parcial = opt.parcial || [];
   const ok = v => v != null && isFinite(v);
