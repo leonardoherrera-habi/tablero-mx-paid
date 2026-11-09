@@ -385,7 +385,7 @@ function agregarCampanas(b, R, segmento, p, clave) {
   const lista = Object.keys(camp).filter(k => camp[k].act > 0).sort((a, z) => camp[z].inv - camp[a].inv);
   if (!lista.length) return;
   b.push({ toggle: clave, n: `Campañas de ${p} (${lista.length})` });
-  if (abiertos.has(clave)) lista.forEach(c => b.push({ n: c, lvl: 3, camp: true, compacto: true, f: r => r.segmento === segmento && r.plataforma === p && r.campana === c }));
+  if (abiertos.has(clave)) lista.forEach(c => b.push({ n: c, lvl: 3, camp: true, f: r => r.segmento === segmento && r.plataforma === p && r.campana === c }));
 }
 
 // Lead Forms es paid por definición, así que no hay corte Paid / orgánico:
@@ -457,11 +457,11 @@ const LISTAS = {
     compact: ['reg','cal','asg','casg','cie','inv','cpl','cpql','cpa'],
   },
   lf: {
-    full:    ['imp','clk','ctr','c2l','reg','cal','asg','masg','casg','cit','cie','peso','conv','tasg','tcit','tcie','inv','minv','cinv','cpm','cpc','cpl','cpql','cpa','cpci','cpcie'],
+    full:    ['imp','clk','ctr','c2l','reg','cal','asg','masg','casg','cit','cie','peso','conv','tasg','tcit','tcie','axc','inv','minv','cinv','cpm','cpc','cpl','cpql','cpa','cpci','cpcie'],
     compact: ['imp','clk','ctr','reg','cal','asg','cie','inv','cpm','cpc','cpl','cpql','cpa'],
   },
   web: {
-    full:    ['imp','clk','ctr','c2l','reg','cal','asg','masg','casg','cit','cie','peso','conv','tasg','tcit','tcie','inv','minv','cinv','cpm','cpc','cpl','cpql','cpa','cpci','cpcie'],
+    full:    ['imp','clk','ctr','c2l','reg','cal','asg','masg','casg','cit','cie','peso','conv','tasg','tcit','tcie','axc','inv','minv','cinv','cpm','cpc','cpl','cpql','cpa','cpci','cpcie'],
     compact: ['imp','clk','ctr','reg','cal','asg','cie','inv','cpm','cpc','cpl','cpql','cpa'],
   },
 };
@@ -626,7 +626,9 @@ function render() {
       return;
     }
     const { porCol, tot } = bi === 0 ? ref : calcularBloque(b, R, cols, colDe, gran, mxn);
-    const inds = (b.compacto ? LISTAS[TAB].compact : lista).filter(k => {
+    // Las campañas muestran los mismos indicadores que su plataforma (Completos o
+    // Clave, según el selector); las metas no aplican porque son por segmento.
+    const inds = lista.filter(k => {
       const req = IND[k].req;
       if (req === 'inv') return conInv.has(bi);
       if (req === 'imp') return conImp.has(bi);
