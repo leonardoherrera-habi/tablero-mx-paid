@@ -190,6 +190,8 @@
                 const text = await res.text();
                 // Si Google devolvió una página de login/HTML en vez de CSV, lo detectamos.
                 if (/^\s*</.test(text)) throw new Error('respuesta no-CSV (posible hoja no pública o login)');
+                // gviz a veces responde 200 con cuerpo vacío; eso es un fallo, no "una hoja sin filas".
+                if (!text.trim()) throw new Error('Google devolvió una respuesta vacía');
                 return text;
             } finally {
                 clearTimeout(timer);
@@ -219,10 +221,13 @@
             const exportUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
             const gviz = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
 
+            // La primera petición a export a veces se queda colgada (redirección lenta de Google)
+            // y la siguiente responde en <1 s. Por eso se reintenta export antes de caer a gviz.
+            const intentos = [[exportUrl, 15000], [exportUrl, 15000], [exportUrl, 30000], [gviz, 15000]];
             let parsed = null, lastErr = null, lastHeaders = null;
-            for (const url of [exportUrl, gviz]) {
+            for (const [url, ms] of intentos) {
                 try {
-                    const csv = await fetchCSV(url, 20000);
+                    const csv = await fetchCSV(url + '&_=' + Date.now(), ms);
                     const p = parseSheet(csv);
                     lastHeaders = p.headers;
                     if (p.rows.length > 0) { parsed = p; break; }  // solo aceptamos si trae filas con fecha
