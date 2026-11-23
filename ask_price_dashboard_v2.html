@@ -54,6 +54,22 @@
         .impacto-num { display: block; font-size: 24px; font-weight: 700; color: #0f172a; line-height: 1.1; }
         .impacto-sub { display: block; font-size: 12px; color: #64748b; margin-top: 2px; }
         .impacto-text { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+        /* Detalle por campaña y anuncio */
+        .seccion-anuncios { margin: 10px 0 35px; }
+        .seccion-anuncios .controles { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 8px; }
+        .seccion-anuncios .nota { font-size: 12px; color: #64748b; line-height: 1.5; margin-bottom: 6px; }
+        .tabla-scroll { overflow-x: auto; }
+        .data-table th.num, .data-table td.num { text-align: right; white-space: nowrap; }
+        .data-table td.nombre { max-width: 360px; overflow-wrap: anywhere; }
+        .data-table th.ordenable { cursor: pointer; user-select: none; }
+        .pct-pill { display: inline-block; min-width: 52px; text-align: center; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+        .pct-pill.ok   { background: #dcfce7; color: #166534; }
+        .pct-pill.warn { background: #fef3c7; color: #92400e; }
+        .pct-pill.bad  { background: #fee2e2; color: #991b1b; }
+        .delta-up   { color: #b91c1c; font-weight: 600; }
+        .delta-down { color: #15803d; font-weight: 600; }
+        .sub-camp { display: block; font-size: 11px; color: #94a3b8; }
     </style>
 </head>
 <body>
@@ -89,7 +105,16 @@
                     <option value="Web">Solo Web</option>
                 </select>
             </div>
-            
+            <div class="filter-group">
+                <label>Medio:</label>
+                <select id="medioFilter" onchange="aplicarMedio()">
+                    <option value="">Todos</option>
+                    <option value="Google">Google</option>
+                    <option value="Meta">Meta</option>
+                    <option value="TikTok">TikTok</option>
+                </select>
+            </div>
+
             <div style="width: 100%;">
                 <label style="font-weight: 600; font-size: 13px; color: #555; display: block; margin-bottom: 10px;">Canales:</label>
                 <div class="channel-filters">
@@ -121,6 +146,49 @@
             </div>
         </div>
         
+        <div id="seccionAnuncios" class="seccion-anuncios" style="display:none">
+            <h2 style="font-size: 18px; margin-bottom: 10px; color: #222;">Detalle por campaña y anuncio</h2>
+            <div class="controles">
+                <div class="filter-group">
+                    <label>Agrupar por:</label>
+                    <select id="agruparPor" onchange="updateAnuncios()">
+                        <option value="anuncio">Campaña + anuncio</option>
+                        <option value="campana">Campaña</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Mínimo de leads:</label>
+                    <select id="minLeads" onchange="updateAnuncios()">
+                        <option value="1">1</option>
+                        <option value="10" selected>10</option>
+                        <option value="30">30</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Buscar:</label>
+                    <input type="text" id="buscarAnuncio" placeholder="nombre de campaña o anuncio" oninput="updateAnuncios()">
+                </div>
+            </div>
+            <p class="nota" id="notaAnuncios"></p>
+            <div class="tabla-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Medio</th>
+                            <th id="thNombre">Campaña / anuncio</th>
+                            <th class="num ordenable" data-orden="total">Leads</th>
+                            <th class="num ordenable" data-orden="sin">Sin ask price</th>
+                            <th class="num ordenable" data-orden="pct">% sin</th>
+                            <th class="num ordenable" data-orden="pctAnt">% periodo anterior</th>
+                            <th class="num ordenable" data-orden="share">% del total sin precio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaAnuncios"></tbody>
+                </table>
+            </div>
+            <div style="margin-top:10px"><button id="verMasAnuncios" onclick="toggleVerTodos()">Ver todos</button></div>
+        </div>
+
         <h2 style="font-size: 18px; margin-bottom: 15px; color: #222;">Datos Detallados</h2>
         <table class="data-table">
             <thead>
@@ -261,7 +329,8 @@
             }
 
             const stamp = new Date().toLocaleString('es-MX', { hour12: false });
-            statusEl.textContent = `✅ ${rawData.length} registros · actualizado ${stamp}`;
+            const leadsTot = rawData.reduce((s, r) => s + (parseInt(r.total_leads) || 0), 0);
+            statusEl.textContent = `✅ ${leadsTot.toLocaleString('es-MX')} leads en ${rawData.length} filas · actualizado ${stamp}`;
             refreshDash();
         }
         
@@ -448,27 +517,157 @@
             renderImpacto();
         }
         
-        function refreshDash() {
-            const dateFrom = new Date(document.getElementById('dateFrom').value);
-            const dateTo = new Date(document.getElementById('dateTo').value);
+        // Medio = plataforma. Google agrupa Search, P Max y Demand Gen.
+        function medioDe(canal) {
+            return String(canal).startsWith('Google') ? 'Google' : canal;
+        }
+
+        // El selector de medio marca sólo los canales de esa plataforma;
+        // las casillas siguen disponibles para afinar dentro del medio.
+        function aplicarMedio() {
+            const medio = document.getElementById('medioFilter').value;
+            document.querySelectorAll('.channel-filters input').forEach(cb => {
+                cb.checked = !medio || medioDe(cb.value) === medio;
+            });
+            refreshDash();
+        }
+
+        // Filas que pasan los filtros de fuente y canal dentro de [desde, hasta] (ambos inclusive).
+        function filtrarFilas(desde, hasta) {
             const sourceFilter = document.getElementById('sourceFilter').value;
-            
             const selectedChannels = Array.from(document.querySelectorAll('.channel-filters input:checked'))
                 .map(cb => cb.value);
-            
-            const filteredData = rawData.filter(row => {
-                const parts = row.fecha.split('/');
-                const fecha = new Date(parts[2], parts[1] - 1, parts[0]);
-                return fecha >= dateFrom && fecha <= dateTo &&
+            return rawData.filter(row => {
+                const fecha = fechaADate(row.fecha);
+                return fecha >= desde && fecha <= hasta &&
                        (!sourceFilter || row.fuente === sourceFilter) &&
                        selectedChannels.includes(row.canal);
             });
-            
+        }
+
+        // Los inputs de fecha dan yyyy-mm-dd; se leen como fecha local, igual que fechaADate.
+        function leerFechaInput(id) {
+            const [y, m, d] = document.getElementById(id).value.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        function refreshDash() {
+            const dateFrom = leerFechaInput('dateFrom');
+            const dateTo = leerFechaInput('dateTo');
+            const filteredData = filtrarFilas(dateFrom, dateTo);
+
             updateSummaryCards(filteredData);
             updateCharts(filteredData);
             updateTable(filteredData);
+            updateAnuncios();
             checkAlerts();
         }
+
+        /* ─────────── Detalle por campaña y anuncio ───────────
+           Sólo aparece si la hoja trae las columnas `campana` y `anuncio`.
+           Compara contra el periodo anterior de la misma duración, para ver
+           qué anuncio empeoró y no sólo cuál está alto.                    */
+        let ordenAnuncios = 'sin';
+        let verTodosAnuncios = false;
+        const TOP_ANUNCIOS = 25;
+
+        function escaparHTML(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function nombreCorto(campana) {
+            return String(campana).replace(/^FB_HabiWeb_Conversiones_/, '').replace(/^FB_HabiWeb_/, '');
+        }
+
+        function agruparAnuncios(filas, porAnuncio) {
+            const g = {};
+            filas.forEach(r => {
+                const clave = r.canal + '|' + r.campana + (porAnuncio ? '|' + r.anuncio : '');
+                if (!g[clave]) g[clave] = { canal: r.canal, campana: r.campana, anuncio: r.anuncio, total: 0, sin: 0 };
+                g[clave].total += parseInt(r.total_leads) || 0;
+                g[clave].sin   += parseInt(r.leads_without_price) || 0;
+            });
+            return g;
+        }
+
+        function toggleVerTodos() {
+            verTodosAnuncios = !verTodosAnuncios;
+            updateAnuncios();
+        }
+
+        function updateAnuncios() {
+            const seccion = document.getElementById('seccionAnuncios');
+            if (!rawData.length || !('anuncio' in rawData[0])) { seccion.style.display = 'none'; return; }
+            seccion.style.display = '';
+
+            const desde = leerFechaInput('dateFrom');
+            const hasta = leerFechaInput('dateTo');
+            const dias = Math.round((hasta - desde) / 864e5) + 1;
+            const antHasta = new Date(desde.getTime() - 864e5);
+            const antDesde = new Date(desde.getTime() - dias * 864e5);
+
+            const porAnuncio = document.getElementById('agruparPor').value === 'anuncio';
+            const minLeads = parseInt(document.getElementById('minLeads').value) || 1;
+            const busca = document.getElementById('buscarAnuncio').value.trim().toLowerCase();
+
+            const actual = agruparAnuncios(filtrarFilas(desde, hasta), porAnuncio);
+            const previo = agruparAnuncios(filtrarFilas(antDesde, antHasta), porAnuncio);
+            const totalSin = Object.values(actual).reduce((s, x) => s + x.sin, 0);
+
+            let filas = Object.entries(actual).map(([clave, x]) => {
+                const p = previo[clave];
+                return {
+                    ...x,
+                    pct: x.total ? 100 * x.sin / x.total : 0,
+                    pctAnt: (p && p.total >= 5) ? 100 * p.sin / p.total : null,
+                    totalAnt: p ? p.total : 0,
+                    share: totalSin ? 100 * x.sin / totalSin : 0
+                };
+            }).filter(x => x.total >= minLeads)
+              .filter(x => !busca || (x.campana + ' ' + (x.anuncio || '')).toLowerCase().includes(busca));
+
+            filas.sort((a, b) => {
+                const va = a[ordenAnuncios], vb = b[ordenAnuncios];
+                if (va === null) return 1;
+                if (vb === null) return -1;
+                return vb - va;
+            });
+
+            const visibles = verTodosAnuncios ? filas : filas.slice(0, TOP_ANUNCIOS);
+            document.getElementById('thNombre').textContent = porAnuncio ? 'Anuncio · campaña' : 'Campaña';
+            document.getElementById('tablaAnuncios').innerHTML = visibles.map(x => {
+                const delta = x.pctAnt === null ? null : x.pct - x.pctAnt;
+                const deltaTxt = delta === null
+                    ? '<span class="sub-camp">nuevo o &lt;5 leads</span>'
+                    : `${x.pctAnt.toFixed(0)}% <span class="${delta >= 0 ? 'delta-up' : 'delta-down'}">(${delta >= 0 ? '+' : ''}${delta.toFixed(0)})</span>`;
+                const nombre = porAnuncio
+                    ? `${escaparHTML(x.anuncio)}<span class="sub-camp">${escaparHTML(nombreCorto(x.campana))}</span>`
+                    : escaparHTML(nombreCorto(x.campana));
+                return `<tr>
+                    <td>${escaparHTML(x.canal)}</td>
+                    <td class="nombre" title="${escaparHTML(x.campana)}">${nombre}</td>
+                    <td class="num">${x.total}</td>
+                    <td class="num">${x.sin}</td>
+                    <td class="num"><span class="pct-pill ${claseUmbral(x.pct)}">${x.pct.toFixed(0)}%</span></td>
+                    <td class="num">${deltaTxt}</td>
+                    <td class="num">${x.share.toFixed(1)}%</td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="7" style="color:#94a3b8">Sin filas con estos filtros.</td></tr>';
+
+            const btn = document.getElementById('verMasAnuncios');
+            btn.style.display = filas.length > TOP_ANUNCIOS ? '' : 'none';
+            btn.textContent = verTodosAnuncios ? `Ver sólo los primeros ${TOP_ANUNCIOS}` : `Ver todos (${filas.length})`;
+
+            const f = d => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+            document.getElementById('notaAnuncios').innerHTML =
+                `Ordenado por <strong>${{ total: 'leads', sin: 'leads sin ask price', pct: '% sin', pctAnt: '% del periodo anterior', share: '% del total sin precio' }[ordenAnuncios]}</strong> (clic en un encabezado para cambiar). ` +
+                `"Periodo anterior" = ${f(antDesde)}–${f(antHasta)}, mismos ${dias} días justo antes del rango elegido. ` +
+                `El anuncio sale de <code>utm_content</code> en HubSpot; si el anuncio no lo trae, aparece como "(sin anuncio)".`;
+        }
+
+        document.querySelectorAll('#seccionAnuncios th.ordenable').forEach(th => {
+            th.addEventListener('click', () => { ordenAnuncios = th.dataset.orden; updateAnuncios(); });
+        });
         
         function updateSummaryCards(data) {
             const grouped = {};
@@ -599,16 +798,25 @@
             });
         }
         
+        // La hoja puede venir a nivel anuncio; esta tabla se queda en fecha × canal × fuente.
         function updateTable(data) {
-            const html = data.map(row => `
+            const g = {};
+            data.forEach(row => {
+                const k = row.fecha + '|' + row.canal + '|' + row.fuente;
+                if (!g[k]) g[k] = { fecha: row.fecha, canal: row.canal, fuente: row.fuente, total: 0, con: 0, sin: 0 };
+                g[k].total += parseInt(row.total_leads) || 0;
+                g[k].con   += parseInt(row.leads_with_price) || 0;
+                g[k].sin   += parseInt(row.leads_without_price) || 0;
+            });
+            const html = Object.values(g).map(row => `
                 <tr>
                     <td>${row.fecha}</td>
                     <td>${row.canal}</td>
                     <td>${row.fuente}</td>
-                    <td>${row.total_leads}</td>
-                    <td>${row.leads_with_price}</td>
-                    <td>${row.leads_without_price}</td>
-                    <td><strong>${row.pct_without_price}%</strong></td>
+                    <td>${row.total}</td>
+                    <td>${row.con}</td>
+                    <td>${row.sin}</td>
+                    <td><strong>${row.total ? (100 * row.sin / row.total).toFixed(2) : '0.00'}%</strong></td>
                 </tr>
             `).join('');
             
