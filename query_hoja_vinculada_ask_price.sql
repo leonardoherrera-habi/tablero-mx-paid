@@ -2,6 +2,8 @@
 -- Consulta de la HOJA VINCULADA que alimenta ask_price_dashboard_v2.html
 --   Hoja: ask-price-data-prod  (1_lYIa34n-L4v2PNsEL3Vjx_5YLRQEJFWDRJ-6K-Fu1Y)
 --   Pestaña "Hoja vinculada 1", gid 204886809 — Connected Sheets sobre BigQuery.
+--   El tablero lee "Extracto 1" (gid 713778629): la pestaña vinculada solo
+--   guarda 500 filas de vista previa y esta consulta trae ~4,100.
 --
 -- Ojo: ésta es la consulta que corre en producción, NO query_sheet_ask_price.sql
 -- (esa otra es una propuesta con fuente_id = 3 y taxonomía nueva que nunca se

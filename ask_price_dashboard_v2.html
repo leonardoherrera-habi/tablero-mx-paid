@@ -246,7 +246,9 @@
         }
         
         const SHEET_ID = '1_lYIa34n-L4v2PNsEL3Vjx_5YLRQEJFWDRJ-6K-Fu1Y';
-        const SHEET_GID = '204886809';
+        // "Extracto 1": copia completa de la hoja vinculada. La pestaña vinculada
+        // (gid 204886809) solo guarda las primeras 500 filas y a nivel anuncio no alcanza.
+        const SHEET_GID = '713778629';
 
         // Trae el CSV con timeout para que NUNCA se quede colgado en silencio.
         async function fetchCSV(url, timeoutMs) {
