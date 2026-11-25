@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ask Price Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="alertas_ask_price.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; color: #333; }
@@ -479,43 +480,73 @@
             cont.innerHTML = html;
         }
 
-        /* Alertas por canal: ya no solo P Max. Dispara si el canal está sobre el
-           umbral de descontrol, o si pega un salto contra su propia línea base. */
+        /* Alertas (fuente Web, sin importar los filtros de pantalla).
+           Las reglas viven en alertas_ask_price.js, compartidas con el correo diario.
+           Antes la alerta marcaba a Meta en rojo SIEMPRE (umbral fijo de 20%) y por eso
+           la subida de oct–nov pasó desapercibida: ahora cada canal se compara contra su
+           propia línea base y se señalan los anuncios que explican la subida.          */
         function checkAlerts() {
-            const canales = [...new Set(rawData.map(r => r.canal))];
-            const hoy = new Date();
-            const ini7  = new Date(hoy.getTime() -  7 * 864e5);
-            const ini28 = new Date(hoy.getTime() - 28 * 864e5);
+            const cont = document.getElementById('alertsContainer');
+            if (typeof ReglasAlerta === 'undefined' || !rawData.length) { cont.innerHTML = ''; renderImpacto(); return; }
+
+            const filas = ReglasAlerta.normalizar(rawData, 'Web');
+            const hoy = ReglasAlerta.hoyUTC();
+            const alertas = ReglasAlerta.evaluar(filas, hoy);
+
+            // ¿Desde cuándo está activa cada alerta? Se recorre hacia atrás hasta 30 días.
+            const clave = a => a.tipo + '|' + a.canal + '|' + (a.anuncio || '');
+            const desde = {};
+            alertas.forEach(a => desde[clave(a)] = hoy);
+            for (let k = 1; k <= 30; k++) {
+                const dia = hoy - k * 864e5;
+                const vivas = new Set(ReglasAlerta.evaluar(filas, dia).map(clave));
+                let alguna = false;
+                Object.keys(desde).forEach(c => { if (desde[c] === dia + 864e5 && vivas.has(c)) { desde[c] = dia; alguna = true; } });
+                if (!alguna) break;
+            }
+            const fmt = t => new Date(t).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+            const etiquetaDesde = a => desde[clave(a)] === hoy ? '<strong style="color:#b91c1c">nueva hoy</strong>' : 'desde ' + fmt(desde[clave(a)]);
+
+            const cfg = ReglasAlerta.CFG;
+            if (!alertas.length) {
+                cont.innerHTML = `<div class="status" style="background:#f0fdf4;color:#166534;text-align:left">
+                    ✅ Sin alertas en fuente Web: ningún canal subió ${cfg.subidaCanal}+ pts contra sus ${cfg.base} días previos
+                    y ningún anuncio con % sin precio alto está ganando peso.</div>`;
+                renderImpacto();
+                return;
+            }
 
             let html = '';
-            canales.forEach(canal => {
-                const filas = rawData.filter(r => r.canal === canal);
-                const reciente = agregar(filas, ini7, new Date(hoy.getTime() + 864e5));
-                const base     = agregar(filas, ini28, ini7);
-
-                if (reciente.total < 10 || reciente.pct === null) return;   // muy poco volumen para concluir
-
-                const salto = (base.pct !== null) ? (reciente.pct - base.pct) : null;
-                const critico = reciente.pct >= UMBRAL_MAL;
-                const disparo = (salto !== null && salto >= 15);
-
-                if (!critico && !disparo) return;
-
-                html += `
-                    <div class="alert-box">
-                        <div class="alert-title">⚠️ ${canal} — ${reciente.pct.toFixed(0)}% sin ask price (últimos 7 días)</div>
-                        <div class="alert-text">
-                            ${reciente.sin} de ${reciente.total} leads llegaron sin precio.
-                            ${salto === null ? '' :
-                              `Línea base de los 21 días anteriores: <strong>${base.pct.toFixed(0)}%</strong>
-                               (${salto >= 0 ? '+' : ''}${salto.toFixed(0)} pts).`}
-                            <br><strong>Acción:</strong> revisar ubicaciones y segmentación en la plataforma;
-                            el dato de dónde se sirve el anuncio no está en BigQuery.
-                        </div>
-                    </div>`;
+            alertas.filter(a => a.tipo === 'canal').forEach(a => {
+                html += `<div class="alert-box">
+                    <div class="alert-title">⚠️ ${escaparHTML(a.texto)} · ${etiquetaDesde(a)}</div>
+                    <div class="alert-text">Fuente Web · ${a.leads} leads en los últimos ${cfg.ventana} días.
+                    Revisa abajo qué anuncios lo explican.</div></div>`;
             });
 
-            document.getElementById('alertsContainer').innerHTML = html;
+            const ads = alertas.filter(a => a.tipo === 'anuncio');
+            if (ads.length) {
+                html += `<div class="alert-box" style="background:#fff7ed;border-left-color:#ea580c">
+                    <div class="alert-title" style="color:#9a3412">🔎 Anuncios que están empujando el % sin ask price (últimos ${cfg.ventana} días, fuente Web)</div>
+                    <div class="tabla-scroll"><table class="data-table" style="margin-top:6px;background:transparent">
+                    <thead><tr><th>Anuncio · campaña</th><th>Medio</th><th class="num">Leads</th><th class="num">% sin</th>
+                    <th class="num">Share del canal</th><th class="num">Aporta de los sin precio</th><th>Activa</th></tr></thead><tbody>
+                    ${ads.map(a => `<tr>
+                        <td class="nombre">${escaparHTML(a.anuncio)}<span class="sub-camp">${escaparHTML(nombreCorto(a.campana))}</span></td>
+                        <td>${escaparHTML(a.canal)}</td>
+                        <td class="num">${a.leads}</td>
+                        <td class="num"><span class="pct-pill bad">${a.pct.toFixed(0)}%</span></td>
+                        <td class="num">${a.nuevo ? 'nuevo' : a.shareBase.toFixed(0) + '%'} → ${a.share.toFixed(0)}%</td>
+                        <td class="num">${a.aporte.toFixed(0)}%</td>
+                        <td>${etiquetaDesde(a)}</td></tr>`).join('')}
+                    </tbody></table></div>
+                    <div class="alert-text" style="margin-top:6px">Se marca un anuncio con ≥${cfg.minLeadsAnuncio} leads, ≥${cfg.pctMinAnuncio}% sin precio
+                    (y ${cfg.sobreBase}+ pts sobre la base de su canal), ≥${cfg.shareMin}% de los leads del canal, que ganó
+                    ${cfg.subidaShare}+ pts de share, es nuevo, o aporta ≥${cfg.aporteMin}% de los sin precio.
+                    <strong>Acción:</strong> revisar o pausar el anuncio en la plataforma.</div></div>`;
+            }
+
+            cont.innerHTML = html;
             renderImpacto();
         }
         
