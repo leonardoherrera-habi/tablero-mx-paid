@@ -1,6 +1,7 @@
 # Tablero: prueba Meta DP vs SEG
 
-Compara las dos campañas de la prueba de señal en Meta, México web, con **datos
+Mide igual que `DEFINICIONES-MEDICION.md` (validado contra su referencia del 1-sep-2026:
+774 / 215 / 183). Compara las dos campañas de la prueba de señal en Meta, México web, con **datos
 internos** (gasto del warehouse y funnel de nuestras tablas), no con los de Meta.
 
 | Grupo | Campaña | Optimiza a |
@@ -17,7 +18,7 @@ Inicio: 2-dic-2026. La primera semana es de aprendizaje y el tablero la excluye 
 | `query_prueba_dp_seg.sql` | la query, una fila por día y campaña. **Fuente de verdad** |
 | `AppsScript_prueba.gs` | corre la query cada 3 h y llena la hoja. Lleva el SQL embebido |
 | `index.html` | el tablero; lee la hoja como CSV cada 5 min |
-| `ejemplo.csv` | datos de ejemplo (Nacional como DP y GDL como SEG, 27-oct a 25-nov) |
+| `ejemplo.csv` | datos de ejemplo (Nacional como DP y GDL como SEG, 27-oct a 24-nov) |
 
 Mientras `SHEET_ID` esté vacío en `index.html`, el tablero muestra `ejemplo.csv` con un
 aviso. `?demo=1` fuerza el ejemplo aunque haya hoja.
@@ -41,6 +42,8 @@ el `DECLARE`, sustituye `INICIO` por la fecha y lo mete como cadena en `var SQL`
   query revienta por CPU ("exceeded resource limits"). Con `IN ('…','…')` tarda 3 s.
 - **Repetidos** usa los 180 días anteriores. Sin ventana sale ~34 %, porque cuenta
   leads de hace años; con 180 días, ~16-18 %.
-- **MM vs inmobiliaria** sale de `oportunidad_del_negocio = 'Captado para inmobiliaria'`.
-- Antes del arranque la query devuelve una fila en ceros por campaña (no cero filas),
-  para que Apps Script no marque error.
+- **Calificados = MM** (`fecha_a_pricing`), como `DEFINICIONES-MEDICION.md`. **MM + Inmo**
+  suma `fecha_primer_calificacion` (MM ⊆ Inmo). No partir MM con `oportunidad_del_negocio`:
+  `fecha_a_pricing` ya es MM por definición (un primer intento lo hizo y estaba mal).
+- El día de hoy no se incluye. Antes del arranque la query devuelve una fila en ceros
+  por campaña con la fecha de ayer (no cero filas), para que Apps Script no marque error.

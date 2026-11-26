@@ -4,12 +4,17 @@
 --
 -- Una fila por día y campaña. El tablero agrega (totales, semanas, acumulados).
 --
--- Definiciones (iguales al WBR / tablero ChatGPT):
+-- Definiciones: las de DEFINICIONES-MEDICION.md (WBR, MX Marketing, ChatGPT).
+-- Cada etapa se cuenta el día en que ocurrió, en hora de México, sin el día de hoy.
 --   gasto        resumen_inversiones_mkt_mx (USD), por campana_original
 --   leads        tabla_inmuebles_general por campana_mercadeo, día de creación
---   calificados  llegó a pricing (fecha_a_pricing), contado el día en que llegó
---   calif_inmo   calificados con oportunidad_del_negocio = 'Captado para inmobiliaria'
---   calif_mm     el resto de los calificados
+--   calificados    MM: llegó a pricing (fecha_a_pricing). Es el calificado oficial
+--                  de marketing y al que aplica el benchmark de CPQL.
+--   calif_mm_inmo  MM + Inmo: fecha_a_pricing o fecha_primer_calificacion no nula
+--                  (definición Inmo del tablero de registros por hora; MM ⊆ Inmo).
+--                  Se cuenta en la primera de las dos fechas. Es lo que optimizan
+--                  los dos eventos de la prueba.
+--   calif_inmo     solo Inmo: fecha_primer_calificacion sin fecha_a_pricing
 --   asignados    WBR mart, día de asignación
 --   citas        fecha_cita_agendada;  cierres  seguimiento_funnel_mex 'Cierre - Comprado'
 --   fuera_zona   leads con zona_activa = 0 (día de creación)
@@ -29,7 +34,10 @@ WITH campanas AS (
   ])
 ),
 dias AS (
-  SELECT d FROM UNNEST(GENERATE_DATE_ARRAY(LEAST(INICIO, CURRENT_DATE('America/Mexico_City')), CURRENT_DATE('America/Mexico_City'))) AS d
+  SELECT d FROM UNNEST(GENERATE_DATE_ARRAY(
+    -- Sin el día de hoy. Antes del arranque da un solo día en ceros (no cero filas).
+    LEAST(INICIO, DATE_SUB(CURRENT_DATE('America/Mexico_City'), INTERVAL 1 DAY)),
+    DATE_SUB(CURRENT_DATE('America/Mexico_City'), INTERVAL 1 DAY))) AS d
 ),
 gasto AS (
   SELECT i.date AS d, IF(i.campana_original = 'FB_HabiWeb_Conversiones_MX_TEST_DP_CDP_202612', 'DP', 'SEG') AS grupo,
@@ -41,7 +49,11 @@ gasto AS (
 ),
 leads AS (
   SELECT g.nid, IF(g.campana_mercadeo = 'FB_HabiWeb_Conversiones_MX_TEST_DP_CDP_202612', 'DP', 'SEG') AS grupo, DATE(g.fecha_creacion) AS d_reg, DATE(g.fecha_a_pricing) AS d_cal,
-         DATE(g.fecha_cita_agendada) AS d_cit, g.zona_activa, g.oportunidad_del_negocio, g.telefono,
+         IF(g.fecha_a_pricing IS NULL AND g.fecha_primer_calificacion IS NULL, NULL,
+            LEAST(COALESCE(DATE(g.fecha_a_pricing), DATE '9999-12-31'),
+                  COALESCE(DATE(g.fecha_primer_calificacion), DATE '9999-12-31'))) AS d_mmi,
+         IF(g.fecha_a_pricing IS NULL, DATE(g.fecha_primer_calificacion), NULL) AS d_inmo,
+         DATE(g.fecha_cita_agendada) AS d_cit, g.zona_activa, g.telefono,
          g.fecha_creacion
   FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` g
   -- Lista literal a propósito: un JOIN contra la CTE campanas (UNNEST) impide que
@@ -94,8 +106,8 @@ eventos AS (
     ('repetidos', IF(l.es_repetido, l.d_reg, NULL)),
     ('ask_price', IF(l.con_ask, l.d_reg, NULL)),
     ('calificados', l.d_cal),
-    ('calif_inmo', IF(l.oportunidad_del_negocio = 'Captado para inmobiliaria', l.d_cal, NULL)),
-    ('calif_mm', IF(COALESCE(l.oportunidad_del_negocio, '') != 'Captado para inmobiliaria', l.d_cal, NULL)),
+    ('calif_mm_inmo', l.d_mmi),
+    ('calif_inmo', l.d_inmo),
     ('asignados', a.d), ('citas', l.d_cit), ('cierres', ci.d)
   ]) AS e
   WHERE e.d IS NOT NULL
@@ -104,7 +116,7 @@ conteos AS (
   SELECT d, grupo,
     COUNTIF(etapa = 'leads') AS leads, COUNTIF(etapa = 'fuera_zona') AS fuera_zona,
     COUNTIF(etapa = 'repetidos') AS repetidos, COUNTIF(etapa = 'ask_price') AS ask_price,
-    COUNTIF(etapa = 'calificados') AS calificados, COUNTIF(etapa = 'calif_mm') AS calif_mm,
+    COUNTIF(etapa = 'calificados') AS calificados, COUNTIF(etapa = 'calif_mm_inmo') AS calif_mm_inmo,
     COUNTIF(etapa = 'calif_inmo') AS calif_inmo, COUNTIF(etapa = 'asignados') AS asignados,
     COUNTIF(etapa = 'citas') AS citas, COUNTIF(etapa = 'cierres') AS cierres
   FROM eventos GROUP BY 1, 2
@@ -115,7 +127,7 @@ SELECT
   COALESCE(g.impresiones, 0) AS impresiones, COALESCE(g.clics, 0) AS clics,
   COALESCE(k.leads, 0) AS leads, COALESCE(k.fuera_zona, 0) AS fuera_zona,
   COALESCE(k.repetidos, 0) AS repetidos, COALESCE(k.ask_price, 0) AS ask_price,
-  COALESCE(k.calificados, 0) AS calificados, COALESCE(k.calif_mm, 0) AS calif_mm,
+  COALESCE(k.calificados, 0) AS calificados, COALESCE(k.calif_mm_inmo, 0) AS calif_mm_inmo,
   COALESCE(k.calif_inmo, 0) AS calif_inmo, COALESCE(k.asignados, 0) AS asignados,
   COALESCE(k.citas, 0) AS citas, COALESCE(k.cierres, 0) AS cierres
 FROM dias dd

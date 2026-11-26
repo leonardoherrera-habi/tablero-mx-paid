@@ -96,7 +96,7 @@
   </section>
 
   <section class="card">
-    <h2>Costo por calificado acumulado (USD)</h2>
+    <h2>CPQL acumulado (MM, USD)</h2>
     <p class="muted">Gasto acumulado ÷ calificados acumulados, día a día. La franja verde es el rango esperado (USD 72–91).</p>
     <div class="chart" id="chartCpql"><div class="tip"></div></div>
   </section>
@@ -109,8 +109,9 @@
   <section class="card">
     <h2>Cómo leer este tablero</h2>
     <ul class="notas">
-      <li><b>Calificado</b> = el lead llegó a pricing (<code>fecha_a_pricing</code>), contado el día en que llegó, igual que el WBR.
-        Se divide en <b>MM</b> e <b>inmobiliaria</b> (<code>oportunidad_del_negocio = 'Captado para inmobiliaria'</code>).</li>
+      <li>Mismas reglas que <code>DEFINICIONES-MEDICION.md</code> (WBR, MX Marketing, ChatGPT): cada etapa el día en que ocurrió, hora de México, <b>sin el día de hoy</b>.</li>
+      <li><b>Calificado MM</b> = llegó a pricing (<code>fecha_a_pricing</code>). Es el calificado oficial y al que aplica el benchmark de CPQL.</li>
+      <li><b>MM + Inmo</b> = <code>fecha_a_pricing</code> o <code>fecha_primer_calificacion</code> no nula (MM ⊆ Inmo), en la primera de las dos fechas. Es lo que optimizan los dos eventos de la prueba; no tiene benchmark.</li>
       <li><b>Gasto</b> sale de <code>resumen_inversiones_mkt_mx</code> (USD). <b>Leads</b> y funnel, de <code>tabla_inmuebles_general</code> por <code>campana_mercadeo</code>.</li>
       <li><b>Repetidos</b>: el teléfono ya tenía un lead (de cualquier fuente) en los 180 días anteriores. Es lo que la exclusión de Amplitude debería bajar en DP.</li>
       <li><b>Fuera de zona</b>: <code>zona_activa = 0</code>. Ninguno llega a calificado.</li>
@@ -134,7 +135,7 @@ const GRUPOS = [
   { k: 'DP', nombre: 'DP (Amplitude)', color: 'var(--dp)' },
   { k: 'SEG', nombre: 'SEG (Segment)', color: 'var(--seg)' },
 ];
-const NUM = ['gasto_usd','impresiones','clics','leads','fuera_zona','repetidos','ask_price','calificados','calif_mm','calif_inmo','asignados','citas','cierres'];
+const NUM = ['gasto_usd','impresiones','clics','leads','fuera_zona','repetidos','ask_price','calificados','calif_mm_inmo','calif_inmo','asignados','citas','cierres'];
 
 let filas = [], esEjemplo = false;
 
@@ -228,11 +229,12 @@ function pintar() {
     ['Gasto', (s) => s.gasto_usd, fmtUSD],
     ['Leads', (s) => s.leads, fmtN],
     ['CPL', (s) => div(s.gasto_usd, s.leads), fmtUSD, true],
-    ['Calificados (MM + inmo)', (s) => s.calificados, fmtN, false, true],
-    ['  · MM', (s) => s.calif_mm, fmtN],
-    ['  · Inmobiliaria', (s) => s.calif_inmo, fmtN],
-    ['CPQL', (s) => div(s.gasto_usd, s.calificados), fmtUSD, true, true],
-    ['Lead → calificado', (s) => div(s.calificados, s.leads), fmtP],
+    ['Calificados MM', (s) => s.calificados, fmtN, false, true],
+    ['CPQL (MM)', (s) => div(s.gasto_usd, s.calificados), fmtUSD, true, true],
+    ['Lead → calificado MM', (s) => div(s.calificados, s.leads), fmtP],
+    ['Calificados MM + Inmo', (s) => s.calif_mm_inmo, fmtN, false, true],
+    ['  · de ellos, solo Inmo', (s) => s.calif_inmo, fmtN],
+    ['Costo por calificado MM + Inmo', (s) => div(s.gasto_usd, s.calif_mm_inmo), fmtUSD, true],
     ['Asignados', (s) => s.asignados, fmtN],
     ['Citas', (s) => s.citas, fmtN],
     ['Cierres', (s) => s.cierres, fmtN],
@@ -253,7 +255,7 @@ function pintar() {
       dif = (pct > 0 ? '+' : '') + (pct * 100).toLocaleString('es-MX', { maximumFractionDigits: 0 }) + ' %' +
         (juzgar && Math.abs(pct) >= 0.005 ? (mejor ? ' <span class="muted">(DP mejor)</span>' : ' <span class="muted">(SEG mejor)</span>') : '');
     }
-    const celda = (v, s) => fmt(v) + (nom === 'CPQL' ? chipCPQL(v, s.calificados) : '');
+    const celda = (v, s) => fmt(v) + (nom === 'CPQL (MM)' ? chipCPQL(v, s.calificados) : '');
     h += `<tr class="${hl ? 'hl' : ''}"><td>${nom.replace(/^  · /, '&nbsp;&nbsp;· ')}</td><td>${celda(a, S.DP)}</td><td>${celda(b, S.SEG)}</td><td>${dif}</td></tr>`;
   });
   document.getElementById('resumen').innerHTML = h + '</tbody>';
@@ -273,15 +275,15 @@ function pintarSemanas(desde) {
   const sem = {};
   filas.filter((f) => f.fecha >= desde).forEach((f) => {
     const k = lunes(f.fecha); sem[k] = sem[k] || {};
-    const s = (sem[k][f.grupo] = sem[k][f.grupo] || { gasto_usd: 0, leads: 0, calificados: 0, calif_mm: 0, calif_inmo: 0 });
-    ['gasto_usd', 'leads', 'calificados', 'calif_mm', 'calif_inmo'].forEach((n) => (s[n] += f[n]));
+    const s = (sem[k][f.grupo] = sem[k][f.grupo] || { gasto_usd: 0, leads: 0, calificados: 0, calif_mm_inmo: 0 });
+    ['gasto_usd', 'leads', 'calificados', 'calif_mm_inmo'].forEach((n) => (s[n] += f[n]));
   });
   let h = '<thead><tr><th>Semana</th>' + GRUPOS.map((g) =>
-    `<th>${g.k} gasto</th><th>${g.k} leads</th><th>${g.k} calif. (MM/inmo)</th><th>${g.k} CPQL</th>`).join('') + '</tr></thead><tbody>';
+    `<th>${g.k} gasto</th><th>${g.k} leads</th><th>${g.k} calif. MM</th><th>${g.k} CPQL</th><th>${g.k} MM + Inmo</th>`).join('') + '</tr></thead><tbody>';
   Object.keys(sem).sort().reverse().forEach((k) => {
     h += `<tr><td>${k}</td>` + GRUPOS.map((g) => {
-      const s = sem[k][g.k] || { gasto_usd: 0, leads: 0, calificados: 0, calif_mm: 0, calif_inmo: 0 };
-      return `<td>${fmtUSD(s.gasto_usd)}</td><td>${fmtN(s.leads)}</td><td>${fmtN(s.calificados)} (${s.calif_mm}/${s.calif_inmo})</td><td>${fmtUSD(div(s.gasto_usd, s.calificados))}</td>`;
+      const s = sem[k][g.k] || { gasto_usd: 0, leads: 0, calificados: 0, calif_mm_inmo: 0 };
+      return `<td>${fmtUSD(s.gasto_usd)}</td><td>${fmtN(s.leads)}</td><td>${fmtN(s.calificados)}</td><td>${fmtUSD(div(s.gasto_usd, s.calificados))}</td><td>${fmtN(s.calif_mm_inmo)}</td>`;
     }).join('') + '</tr>';
   });
   document.getElementById('semanas').innerHTML = h + '</tbody>';
