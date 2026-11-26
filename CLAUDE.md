@@ -14,6 +14,7 @@ del repositorio.
 | MX Marketing (antes MX Paid Media) | `index.html` + hoja de Google | vivo, cada 3 h; dos pestañas desde el 29-oct-2026 (ver abajo) |
 | ChatGPT Ads MX | `chatgpt-mx/index.html` | vivo, se actualiza solo cada 3 h |
 | Ask Price | `ask_price_dashboard_v2.html` | vivo, lee una hoja cada 5 min |
+| Prueba Meta DP vs SEG | `prueba-dp-seg/index.html` | desde el 25-nov-2026; muestra `ejemplo.csv` hasta que se conecte su hoja (ver su README) |
 
 Los demás `ask_price_dashboard_*.html` son versiones anteriores. Ojo con
 `ask_price_dashboard_automatico.html`: pese al nombre, **no** se actualiza solo

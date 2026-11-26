@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba Meta DP vs SEG</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f3f0; --surface-1: #fcfcfb; --line: #e2e1dc; --line-strong: #cfcec8;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #77766f;
+    --dp: #2a78d6; --seg: #eb6834; --band: rgba(27,175,122,.12);
+    --warn-bg: #fdf4e3; --warn-line: #edc87a; --warn-ink: #6b4c07;
+    --bad-bg: #fdeceb; --bad-line: #f0a9a7; --bad-ink: #8c1f1d;
+    --ok-bg: #e8f6ef; --ok-line: #7fcfae; --ok-ink: #0f6446;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-0: #121211; --surface-1: #1a1a19; --line: #2e2e2b; --line-strong: #444440;
+      --text-primary: #fff; --text-secondary: #c3c2b7; --text-muted: #94938a;
+      --dp: #3987e5; --seg: #d95926; --band: rgba(25,158,112,.16);
+      --warn-bg: #2a2410; --warn-line: #6b5a20; --warn-ink: #e8cf92;
+      --bad-bg: #2c1514; --bad-line: #6d2d2b; --bad-ink: #f0a9a7;
+      --ok-bg: #11261e; --ok-line: #2f6b52; --ok-ink: #8fdcbb;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --line: #2e2e2b; --line-strong: #444440;
+    --text-primary: #fff; --text-secondary: #c3c2b7; --text-muted: #94938a;
+    --dp: #3987e5; --seg: #d95926; --band: rgba(25,158,112,.16);
+    --warn-bg: #2a2410; --warn-line: #6b5a20; --warn-ink: #e8cf92;
+    --bad-bg: #2c1514; --bad-line: #6d2d2b; --bad-ink: #f0a9a7;
+    --ok-bg: #11261e; --ok-line: #2f6b52; --ok-ink: #8fdcbb;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 4px; }
+  .sub { color: var(--text-secondary); margin: 0 0 16px; }
+  .muted { color: var(--text-muted); font-size: 12px; }
+  .card { background: var(--surface-1); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .banner { border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; border: 1px solid; }
+  .banner.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+  .banner.bad { background: var(--bad-bg); border-color: var(--bad-line); color: var(--bad-ink); }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 16px; }
+  .controls label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; }
+  thead th { color: var(--text-secondary); font-weight: 600; font-size: 12px; border-bottom-color: var(--line-strong); }
+  tr.hl td { font-weight: 650; }
+  .scroll { overflow-x: auto; }
+  .chip { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; border: 1px solid; margin-left: 6px; }
+  .chip.ok { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok-ink); }
+  .chip.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+  .chip.bad { background: var(--bad-bg); border-color: var(--bad-line); color: var(--bad-ink); }
+  .chip.na { background: transparent; border-color: var(--line-strong); color: var(--text-muted); }
+  .chart { position: relative; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .axis text { fill: var(--text-muted); font-size: 11px; }
+  .grid { stroke: var(--line); stroke-width: 1; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--line-strong);
+    border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.12); display: none; min-width: 170px; }
+  .tip b { display: block; margin-bottom: 4px; }
+  ul.notas { margin: 8px 0 0; padding-left: 18px; color: var(--text-secondary); }
+  ul.notas li { margin-bottom: 4px; }
+  @media (max-width: 640px) { th, td { padding: 6px; } h1 { font-size: 19px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Prueba Meta: Amplitude (DP) vs Segment (SEG)</h1>
+  <p class="sub">México, web paid. Datos internos: gasto del warehouse y funnel de nuestras tablas, no de Meta.</p>
+  <div id="estado" class="banner warn" hidden></div>
+
+  <div class="controls">
+    <div class="legend">
+      <span><span class="sw" style="background:var(--dp)"></span>DP · optimiza a Lead Calificado DataPlatform</span>
+      <span><span class="sw" style="background:var(--seg)"></span>SEG · optimiza a Purchase (MM + inmo)</span>
+    </div>
+    <label><input type="checkbox" id="sinAprendizaje" checked> Excluir semana de aprendizaje (primeros 7 días)</label>
+  </div>
+
+  <section class="card">
+    <h2>Resultado acumulado</h2>
+    <p class="muted" id="periodo"></p>
+    <div class="scroll"><table id="resumen"></table></div>
+    <p class="muted">CPQL contra el benchmark de Meta web paid: <b>exitoso &lt; USD 72</b> · esperado USD 72–91 · no exitoso &gt; USD 91.
+      Sin veredicto con menos de 5 calificados.</p>
+  </section>
+
+  <section class="card">
+    <h2>Costo por calificado acumulado (USD)</h2>
+    <p class="muted">Gasto acumulado ÷ calificados acumulados, día a día. La franja verde es el rango esperado (USD 72–91).</p>
+    <div class="chart" id="chartCpql"><div class="tip"></div></div>
+  </section>
+
+  <section class="card">
+    <h2>Por semana (lunes a domingo)</h2>
+    <div class="scroll"><table id="semanas"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>Cómo leer este tablero</h2>
+    <ul class="notas">
+      <li><b>Calificado</b> = el lead llegó a pricing (<code>fecha_a_pricing</code>), contado el día en que llegó, igual que el WBR.
+        Se divide en <b>MM</b> e <b>inmobiliaria</b> (<code>oportunidad_del_negocio = 'Captado para inmobiliaria'</code>).</li>
+      <li><b>Gasto</b> sale de <code>resumen_inversiones_mkt_mx</code> (USD). <b>Leads</b> y funnel, de <code>tabla_inmuebles_general</code> por <code>campana_mercadeo</code>.</li>
+      <li><b>Repetidos</b>: el teléfono ya tenía un lead (de cualquier fuente) en los 180 días anteriores. Es lo que la exclusión de Amplitude debería bajar en DP.</li>
+      <li><b>Fuera de zona</b>: <code>zona_activa = 0</code>. Ninguno llega a calificado.</li>
+      <li>Los <b>últimos 3 días son provisionales</b>: el CRM se sigue actualizando. Los cierres tardan ~49 días (mediana) y casi no se verán durante la prueba.</li>
+      <li>Diferencias de diseño a recordar: DP usa objetivo Clientes potenciales y SEG usa Ventas; cada una tiene su propia semilla y sus exclusiones.</li>
+    </ul>
+    <p class="muted" id="fuente"></p>
+  </section>
+</main>
+
+<script>
+// ---------------------------------------------------------------------------
+// Fuente de datos. SHEET_ID vacío = datos de ejemplo (ejemplo.csv).
+// Cuando la hoja exista y Apps Script la llene, poner aquí su id.
+// ---------------------------------------------------------------------------
+const SHEET_ID = '';
+const SHEET_GID = '';          // vacío = primera pestaña (una hoja creada desde CSV no tiene gid 0)
+const INICIO_PRUEBA = '2026-12-02';
+const BENCH = { exitoso: 72, esperado: 91 };
+const GRUPOS = [
+  { k: 'DP', nombre: 'DP (Amplitude)', color: 'var(--dp)' },
+  { k: 'SEG', nombre: 'SEG (Segment)', color: 'var(--seg)' },
+];
+const NUM = ['gasto_usd','impresiones','clics','leads','fuera_zona','repetidos','ask_price','calificados','calif_mm','calif_inmo','asignados','citas','cierres'];
+
+let filas = [], esEjemplo = false;
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const head = lines.shift().split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
+  return lines.map((l) => {
+    const v = l.split(',').map((x) => x.trim().replace(/^"|"$/g, ''));
+    const o = {}; head.forEach((h, i) => (o[h] = v[i]));
+    NUM.forEach((n) => (o[n] = parseFloat(String(o[n] || '0').replace(/,(?=\d{1,2}$)/, '.')) || 0));
+    return o;
+  }).filter((o) => /^\d{4}-\d{2}-\d{2}$/.test(o.fecha));
+}
+
+function conTimeout(url, ms = 20000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal, redirect: 'follow', cache: 'no-store' }).finally(() => clearTimeout(t));
+}
+
+async function cargar() {
+  const demo = new URLSearchParams(location.search).has('demo');
+  const urls = (!SHEET_ID || demo) ? ['ejemplo.csv?_=' + Date.now()] : [
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv${SHEET_GID ? '&gid=' + SHEET_GID : ''}`,
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv${SHEET_GID ? '&gid=' + SHEET_GID : ''}`,
+  ];
+  esEjemplo = !SHEET_ID || demo;
+  let ultimoError = '';
+  for (const u of urls) {
+    try {
+      const r = await conTimeout(u);
+      const text = await r.text();
+      if (/^\s*</.test(text)) throw new Error('la hoja no es pública (Google devolvió una página, no CSV)');
+      const f = parseCSV(text);
+      if (!f.length) throw new Error('la hoja no trae filas con fecha');
+      filas = f; pintar(); return;
+    } catch (e) { ultimoError = e.name === 'AbortError' ? 'la hoja tardó más de 20 s' : e.message; }
+  }
+  const est = document.getElementById('estado');
+  est.className = 'banner bad'; est.hidden = false;
+  est.textContent = 'No se pudieron cargar los datos: ' + ultimoError + '. El tablero no muestra números viejos.';
+}
+
+// ---------------------------------------------------------------------------
+const fmtUSD = (v) => v == null || !isFinite(v) ? '—' : 'USD ' + v.toLocaleString('es-MX', { maximumFractionDigits: v < 100 ? 2 : 0, minimumFractionDigits: v < 100 ? 2 : 0 });
+const fmtN = (v) => v.toLocaleString('es-MX', { maximumFractionDigits: 0 });
+const fmtP = (v) => v == null || !isFinite(v) ? '—' : (v * 100).toLocaleString('es-MX', { maximumFractionDigits: 1 }) + ' %';
+const div = (a, b) => (b ? a / b : null);
+
+function inicioEfectivo() {
+  const fechas = [...new Set(filas.map((f) => f.fecha))].sort();
+  const base = esEjemplo ? fechas[0] : INICIO_PRUEBA;
+  if (!document.getElementById('sinAprendizaje').checked) return base;
+  const d = new Date(base + 'T12:00:00'); d.setDate(d.getDate() + 7);
+  return d.toISOString().slice(0, 10);
+}
+
+function suma(grupo, desde) {
+  const s = {}; NUM.forEach((n) => (s[n] = 0));
+  filas.filter((f) => f.grupo === grupo && f.fecha >= desde).forEach((f) => NUM.forEach((n) => (s[n] += f[n])));
+  return s;
+}
+
+function chipCPQL(cpql, cal) {
+  if (cal < 5) return '<span class="chip na">sin veredicto</span>';
+  if (cpql < BENCH.exitoso) return '<span class="chip ok">✓ exitoso</span>';
+  if (cpql <= BENCH.esperado) return '<span class="chip warn">● esperado</span>';
+  return '<span class="chip bad">▲ no exitoso</span>';
+}
+
+function pintar() {
+  const est = document.getElementById('estado');
+  const fechas = [...new Set(filas.map((f) => f.fecha))].sort();
+  if (esEjemplo) {
+    est.className = 'banner warn'; est.hidden = false;
+    est.innerHTML = '<b>Datos de ejemplo.</b> Son las campañas Nacional (como DP) y GDL (como SEG) del ' +
+      fechas[0] + ' al ' + fechas[fechas.length - 1] + ', para ver el tablero funcionando. La prueba arranca el ' + INICIO_PRUEBA + '.';
+  } else if (fechas[fechas.length - 1] < INICIO_PRUEBA) {
+    est.className = 'banner warn'; est.hidden = false;
+    est.innerHTML = '<b>La prueba aún no inicia.</b> Arranca el ' + INICIO_PRUEBA +
+      '. La hoja ya se actualiza sola; los números aparecen desde ese día.';
+  } else est.hidden = true;
+
+  const desde = inicioEfectivo();
+  const hasta = fechas[fechas.length - 1];
+  document.getElementById('periodo').textContent = `Del ${desde} al ${hasta}` +
+    (document.getElementById('sinAprendizaje').checked ? ' (sin la semana de aprendizaje)' : '') + '. Los últimos 3 días son provisionales.';
+
+  const S = Object.fromEntries(GRUPOS.map((g) => [g.k, suma(g.k, desde)]));
+  const met = [
+    ['Gasto', (s) => s.gasto_usd, fmtUSD],
+    ['Leads', (s) => s.leads, fmtN],
+    ['CPL', (s) => div(s.gasto_usd, s.leads), fmtUSD, true],
+    ['Calificados (MM + inmo)', (s) => s.calificados, fmtN, false, true],
+    ['  · MM', (s) => s.calif_mm, fmtN],
+    ['  · Inmobiliaria', (s) => s.calif_inmo, fmtN],
+    ['CPQL', (s) => div(s.gasto_usd, s.calificados), fmtUSD, true, true],
+    ['Lead → calificado', (s) => div(s.calificados, s.leads), fmtP],
+    ['Asignados', (s) => s.asignados, fmtN],
+    ['Citas', (s) => s.citas, fmtN],
+    ['Cierres', (s) => s.cierres, fmtN],
+    ['Leads con Ask Price', (s) => div(s.ask_price, s.leads), fmtP],
+    ['Leads repetidos (180 días)', (s) => div(s.repetidos, s.leads), fmtP, true],
+    ['Leads fuera de zona', (s) => div(s.fuera_zona, s.leads), fmtP, true],
+    ['Clics', (s) => s.clics, fmtN],
+  ];
+  let h = '<thead><tr><th>Indicador</th>' + GRUPOS.map((g) => `<th><span class="sw" style="background:${g.color}"></span>${g.nombre}</th>`).join('') + '<th>DP vs SEG</th></tr></thead><tbody>';
+  met.forEach(([nom, f, fmt, menosEsMejor, hl]) => {
+    const a = f(S.DP), b = f(S.SEG);
+    let dif = '—';
+    if (a != null && b != null && b !== 0 && !['Gasto', 'Clics'].includes(nom)) {
+      const pct = (a - b) / Math.abs(b);
+      const mejor = menosEsMejor ? pct < 0 : pct > 0;
+      // Solo se juzgan costos y tasas: un conteo depende del gasto y no dice quién es más eficiente.
+      const juzgar = fmt !== fmtN;
+      dif = (pct > 0 ? '+' : '') + (pct * 100).toLocaleString('es-MX', { maximumFractionDigits: 0 }) + ' %' +
+        (juzgar && Math.abs(pct) >= 0.005 ? (mejor ? ' <span class="muted">(DP mejor)</span>' : ' <span class="muted">(SEG mejor)</span>') : '');
+    }
+    const celda = (v, s) => fmt(v) + (nom === 'CPQL' ? chipCPQL(v, s.calificados) : '');
+    h += `<tr class="${hl ? 'hl' : ''}"><td>${nom.replace(/^  · /, '&nbsp;&nbsp;· ')}</td><td>${celda(a, S.DP)}</td><td>${celda(b, S.SEG)}</td><td>${dif}</td></tr>`;
+  });
+  document.getElementById('resumen').innerHTML = h + '</tbody>';
+
+  pintarSemanas(desde);
+  pintarCPQL(desde);
+  document.getElementById('fuente').textContent = (esEjemplo ? 'Fuente: ejemplo.csv' : 'Fuente: hoja actualizada por Apps Script desde BigQuery') +
+    ' · cargado ' + new Date().toLocaleString('es-MX');
+}
+
+function lunes(fecha) {
+  const d = new Date(fecha + 'T12:00:00'); const w = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - w); return d.toISOString().slice(0, 10);
+}
+
+function pintarSemanas(desde) {
+  const sem = {};
+  filas.filter((f) => f.fecha >= desde).forEach((f) => {
+    const k = lunes(f.fecha); sem[k] = sem[k] || {};
+    const s = (sem[k][f.grupo] = sem[k][f.grupo] || { gasto_usd: 0, leads: 0, calificados: 0, calif_mm: 0, calif_inmo: 0 });
+    ['gasto_usd', 'leads', 'calificados', 'calif_mm', 'calif_inmo'].forEach((n) => (s[n] += f[n]));
+  });
+  let h = '<thead><tr><th>Semana</th>' + GRUPOS.map((g) =>
+    `<th>${g.k} gasto</th><th>${g.k} leads</th><th>${g.k} calif. (MM/inmo)</th><th>${g.k} CPQL</th>`).join('') + '</tr></thead><tbody>';
+  Object.keys(sem).sort().reverse().forEach((k) => {
+    h += `<tr><td>${k}</td>` + GRUPOS.map((g) => {
+      const s = sem[k][g.k] || { gasto_usd: 0, leads: 0, calificados: 0, calif_mm: 0, calif_inmo: 0 };
+      return `<td>${fmtUSD(s.gasto_usd)}</td><td>${fmtN(s.leads)}</td><td>${fmtN(s.calificados)} (${s.calif_mm}/${s.calif_inmo})</td><td>${fmtUSD(div(s.gasto_usd, s.calificados))}</td>`;
+    }).join('') + '</tr>';
+  });
+  document.getElementById('semanas').innerHTML = h + '</tbody>';
+}
+
+function pintarCPQL(desde) {
+  const cont = document.getElementById('chartCpql');
+  const tip = cont.querySelector('.tip');
+  const fechas = [...new Set(filas.filter((f) => f.fecha >= desde).map((f) => f.fecha))].sort();
+  const series = GRUPOS.map((g) => {
+    let gs = 0, cs = 0;
+    return { ...g, pts: fechas.map((d) => {
+      const f = filas.find((x) => x.fecha === d && x.grupo === g.k) || { gasto_usd: 0, calificados: 0 };
+      gs += f.gasto_usd; cs += f.calificados;
+      return { d, v: cs >= 1 ? gs / cs : null, gs, cs };
+    }) };
+  });
+  const W = 1000, H = 300, m = { l: 56, r: 70, t: 12, b: 28 };
+  const vals = series.flatMap((s) => s.pts.map((p) => p.v)).filter((v) => v != null);
+  const ymax = Math.max(BENCH.esperado * 1.25, ...vals) * 1.05;
+  const x = (i) => m.l + (fechas.length < 2 ? 0 : i * (W - m.l - m.r) / (fechas.length - 1));
+  const y = (v) => H - m.b - v / ymax * (H - m.t - m.b);
+  const paso = Math.pow(10, Math.floor(Math.log10(ymax / 4)));
+  const tick = [1, 2, 2.5, 5, 10].map((k) => k * paso).find((t) => ymax / t <= 6);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="CPQL acumulado por día, DP contra SEG">`;
+  svg += `<rect x="${m.l}" y="${y(BENCH.esperado)}" width="${W - m.l - m.r}" height="${y(BENCH.exitoso) - y(BENCH.esperado)}" fill="var(--band)"/>`;
+  svg += '<g class="axis">';
+  for (let t = 0; t <= ymax; t += tick) svg += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}"/><text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${t}</text>`;
+  const cada = Math.max(1, Math.ceil(fechas.length / 8));
+  fechas.forEach((d, i) => { if (i % cada === 0) svg += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${d.slice(5)}</text>`; });
+  svg += '</g>';
+  series.forEach((s) => {
+    let path = '', pen = false;
+    s.pts.forEach((p, i) => { if (p.v == null) { pen = false; return; } path += (pen ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p.v).toFixed(1); pen = true; });
+    svg += `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const last = [...s.pts].reverse().find((p) => p.v != null);
+    if (last) {
+      const i = s.pts.indexOf(last);
+      svg += `<circle cx="${x(i)}" cy="${y(last.v)}" r="4" fill="${s.color}" stroke="var(--surface-1)" stroke-width="2"/>`;
+      svg += `<text x="${x(i) + 8}" y="${y(last.v) + 4}" style="fill:var(--text-secondary);font-size:12px;font-weight:600">${s.k} ${Math.round(last.v)}</text>`;
+    }
+  });
+  svg += `<line id="cross" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--line-strong)" stroke-width="1" visibility="hidden"/>`;
+  svg += `<rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" id="hit"/></svg>`;
+  cont.innerHTML = svg; cont.appendChild(tip);
+  const el = cont.querySelector('svg'), hit = el.querySelector('#hit'), cross = el.querySelector('#cross');
+  if (!fechas.length) return;
+  hit.addEventListener('mousemove', (ev) => {
+    const r = el.getBoundingClientRect(); const px = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(fechas.length - 1, Math.round((px - m.l) / ((W - m.l - m.r) / Math.max(1, fechas.length - 1)))));
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
+    tip.innerHTML = `<b>${fechas[i]}</b>` + series.map((s) => {
+      const p = s.pts[i];
+      return `<div><span class="sw" style="background:${s.color}"></span>${s.k}: ${p.v == null ? '—' : fmtUSD(p.v)} <span class="muted">(${fmtUSD(p.gs)} / ${p.cs} calif.)</span></div>`;
+    }).join('');
+    tip.style.display = 'block';
+    const left = x(i) * r.width / W; tip.style.left = Math.min(left + 12, r.width - 190) + 'px'; tip.style.top = '8px';
+  });
+  hit.addEventListener('mouseleave', () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); });
+}
+
+document.getElementById('sinAprendizaje').addEventListener('change', () => filas.length && pintar());
+cargar();
+setInterval(cargar, 5 * 60 * 1000);
+</script>
+</body>
+</html>
